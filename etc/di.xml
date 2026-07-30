@@ -37,6 +37,20 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="catalog_price_rules" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: CatalogPriceRules -->
+    <type name="MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="list_rules" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules\ListRulesAction</item>
+                <item name="get_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules\GetRuleAction</item>
+                <item name="create_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules\CreateRuleAction</item>
+                <item name="deactivate_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules\DeactivateRuleAction</item>
+                <item name="apply_rules" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CatalogPriceRules\ApplyRulesAction</item>
             </argument>
         </arguments>
     </type>
