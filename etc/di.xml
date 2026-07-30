@@ -37,6 +37,18 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="url_rewrite_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: UrlRewriteManager -->
+    <type name="MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="search" xsi:type="object">MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager\SearchAction</item>
+                <item name="create" xsi:type="object">MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager\CreateAction</item>
+                <item name="delete" xsi:type="object">MaggyAssistant\Base\Service\Skills\Seo\UrlRewriteManager\DeleteAction</item>
             </argument>
         </arguments>
     </type>
