@@ -37,6 +37,20 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="cron_status" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: CronStatus -->
+    <type name="MaggyAssistant\Base\Service\Skills\System\CronStatus">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="list_running" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\ListRunningAction</item>
+                <item name="list_schedule" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\ListScheduleAction</item>
+                <item name="list_failed" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\ListFailedAction</item>
+                <item name="health_check" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\HealthCheckAction</item>
+                <item name="schedule_job" xsi:type="object">MaggyAssistant\Base\Service\Skills\System\CronStatus\ScheduleJobAction</item>
             </argument>
         </arguments>
     </type>
