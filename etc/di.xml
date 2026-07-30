@@ -37,6 +37,7 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="review_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager</item>
             </argument>
         </arguments>
     </type>
@@ -91,6 +92,19 @@
                 <item name="list_blocks" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\ListBlocksAction</item>
                 <item name="get_block" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\GetBlockAction</item>
                 <item name="update_block" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\UpdateBlockAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: ReviewManager -->
+    <type name="MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="list_pending" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager\ListPendingAction</item>
+                <item name="list_approved" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager\ListApprovedAction</item>
+                <item name="approve" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager\ApproveAction</item>
+                <item name="reject" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager\RejectAction</item>
+                <item name="get_stats" xsi:type="object">MaggyAssistant\Base\Service\Skills\Catalog\ReviewManager\GetStatsAction</item>
             </argument>
         </arguments>
     </type>
