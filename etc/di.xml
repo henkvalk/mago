@@ -37,6 +37,21 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="order_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: OrderManager -->
+    <type name="MaggyAssistant\Base\Service\Skills\Sales\OrderManager">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="add_comment" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager\AddCommentAction</item>
+                <item name="update_status" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager\UpdateStatusAction</item>
+                <item name="create_shipment" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager\CreateShipmentAction</item>
+                <item name="create_invoice" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager\CreateInvoiceAction</item>
+                <item name="create_creditmemo" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager\CreateCreditmemoAction</item>
+                <item name="cancel" xsi:type="object">MaggyAssistant\Base\Service\Skills\Sales\OrderManager\CancelAction</item>
             </argument>
         </arguments>
     </type>
