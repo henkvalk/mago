@@ -37,6 +37,7 @@
                 <item name="content_generator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\ContentGenerator</item>
                 <item name="cms_data" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData</item>
                 <item name="admin_navigator" xsi:type="object">MaggyAssistant\Base\Service\Skills\Navigation\AdminNavigator</item>
+                <item name="coupon_manager" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager</item>
             </argument>
         </arguments>
     </type>
@@ -91,6 +92,19 @@
                 <item name="list_blocks" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\ListBlocksAction</item>
                 <item name="get_block" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\GetBlockAction</item>
                 <item name="update_block" xsi:type="object">MaggyAssistant\Base\Service\Skills\Content\CmsData\UpdateBlockAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: CouponManager -->
+    <type name="MaggyAssistant\Base\Service\Skills\Marketing\CouponManager">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="list_rules" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\ListRulesAction</item>
+                <item name="get_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\GetRuleAction</item>
+                <item name="create_coupon" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\CreateCouponAction</item>
+                <item name="create_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\CreateRuleAction</item>
+                <item name="deactivate_rule" xsi:type="object">MaggyAssistant\Base\Service\Skills\Marketing\CouponManager\DeactivateRuleAction</item>
             </argument>
         </arguments>
     </type>
