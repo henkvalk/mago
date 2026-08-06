@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace MaggyAssistant\Base\Model\Config\Source;
 
+use MaggyAssistant\Base\Model\Ai\Claude\SupportedModel;
 use Magento\Framework\Data\OptionSourceInterface;
 
 class ClaudeModel implements OptionSourceInterface
@@ -15,10 +16,9 @@ class ClaudeModel implements OptionSourceInterface
      */
     public function toOptionArray(): array
     {
-        return [
-            ['value' => 'claude-sonnet-4-20250514', 'label' => __('Claude Sonnet 4')],
-            ['value' => 'claude-opus-4-20250514', 'label' => __('Claude Opus 4')],
-            ['value' => 'claude-haiku-4-20250514', 'label' => __('Claude Haiku 4')],
-        ];
+        return array_map(
+            fn(SupportedModel $model): array => ['value' => $model->value, 'label' => $model->label()],
+            SupportedModel::cases()
+        );
     }
 }

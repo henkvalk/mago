@@ -621,7 +621,7 @@ The existing `ToolInterface` methods map 1:1 to MCP tool definitions, making thi
 |------|-------------|---------|
 | `maggy/api/provider` | AI provider (`claude` or `openai`) | `claude` |
 | `maggy/api/claude_api_key` | Claude API key (encrypted) | — |
-| `maggy/api/claude_model` | Claude model | `claude-sonnet-4-20250514` |
+| `maggy/api/claude_model` | Claude model | `claude-opus-5` |
 | `maggy/api/openai_api_key` | OpenAI API key (encrypted) | — |
 | `maggy/api/openai_model` | OpenAI model | — |
 | `maggy/api/max_tokens` | Maximum response tokens | `4096` |

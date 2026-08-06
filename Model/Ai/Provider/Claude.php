@@ -8,6 +8,7 @@ namespace MaggyAssistant\Base\Model\Ai\Provider;
 
 use MaggyAssistant\Base\Api\Ai\ProviderInterface;
 use MaggyAssistant\Base\Api\Config\RepositoryInterface as ConfigRepository;
+use MaggyAssistant\Base\Model\Ai\Claude\SupportedModel;
 use MaggyAssistant\Base\Service\Ai\RestClient;
 
 class Claude implements ProviderInterface
@@ -176,14 +177,16 @@ class Claude implements ProviderInterface
         $systemMessages = array_filter($messages, fn($m) => ($m['role'] ?? '') === 'system');
         $nonSystemMessages = array_values(array_filter($messages, fn($m) => ($m['role'] ?? '') !== 'system'));
 
+        $model = $options['model'] ?? $this->configRepository->getModel();
+
         $body = [
-            'model' => $options['model'] ?? $this->configRepository->getModel(),
+            'model' => $model,
             'max_tokens' => $options['max_tokens'] ?? $this->configRepository->getMaxTokens(),
             'messages' => $this->formatMessages($nonSystemMessages),
         ];
 
         $temperature = $options['temperature'] ?? $this->configRepository->getTemperature();
-        if ($temperature > 0) {
+        if ($temperature > 0 && SupportedModel::canModelUseTemperature($model)) {
             $body['temperature'] = $temperature;
         }
 

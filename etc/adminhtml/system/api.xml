@@ -44,7 +44,7 @@
         </field>
         <field id="temperature" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Temperature</label>
-            <comment>Controls randomness. 0 = deterministic, 1 = creative (default: 0.7)</comment>
+            <comment>Controls randomness. 0 = deterministic, 1 = creative (default: 0.7). Ignored by Claude models that no longer accept it, such as Opus 5 and Sonnet 5.</comment>
         </field>
         <field id="streaming" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Enable Streaming</label>
