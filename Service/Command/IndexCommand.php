@@ -140,7 +140,10 @@ class IndexCommand extends AbstractToolCommand
             return $this->renderError((string)$result['error']);
         }
 
-        return '**' . ($result['message'] ?? 'Reindex of all indexers queued') . '.**';
+        $reply = '**' . ($result['message'] ?? 'Reindex of all indexers queued') . '.**';
+        $bulkUuid = (string)($result['bulk_uuid'] ?? '');
+
+        return $bulkUuid ? $reply . "\n\nBulk operation `" . $bulkUuid . '`.' : $reply;
     }
 
     /**

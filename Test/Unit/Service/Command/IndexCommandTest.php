@@ -97,7 +97,10 @@ final class IndexCommandTest extends TestCase
         $reply = $this->command($chat)->execute('reindex', [], self::ADMIN_ID, $this->noopChunk());
 
         self::assertSame([['action' => 'reindex_all']], $chat->inputs());
-        self::assertSame('**Reindex of all indexers queued.**', $reply);
+        self::assertSame(
+            "**Reindex of all indexers queued.**\n\nBulk operation `b1c2d3e4`.",
+            $reply
+        );
     }
 
     #[Test]
