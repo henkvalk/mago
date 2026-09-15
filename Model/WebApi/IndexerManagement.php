@@ -35,7 +35,6 @@ class IndexerManagement implements IndexerManagementInterface
 
         foreach ($this->getIndexers() as $indexer) {
             $indexerId = $indexer->getId();
-
             if ($indexer->getStatus() === StateInterface::STATUS_WORKING) {
                 $result[] = [
                     'id' => $indexerId,

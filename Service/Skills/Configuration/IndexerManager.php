@@ -165,7 +165,6 @@ class IndexerManager implements ActionScopedToolInterface
     private function reindexAll(int $adminUserId): array
     {
         $response = $this->apiClient->postAsync('mago/indexers/reindex-all', [], $adminUserId);
-
         if (isset($response['error'])) {
             return $response;
         }
