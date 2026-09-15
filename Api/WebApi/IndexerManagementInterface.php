@@ -13,7 +13,7 @@ namespace MagoAssistant\Mago\Api\WebApi;
 interface IndexerManagementInterface
 {
     /**
-     * Rebuild every indexer
+     * Reindex all indexers
      *
      * @return string JSON response
      */
