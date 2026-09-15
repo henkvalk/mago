@@ -43,6 +43,7 @@
                 <item name="product_debug" xsi:type="object">MagoAssistant\Mago\Service\Skills\Debug\ProductDebug</item>
                 <item name="docs_search" xsi:type="object">MagoAssistant\Mago\Service\Skills\Docs\DocsSearch</item>
                 <item name="module_version" xsi:type="object">MagoAssistant\Mago\Service\Skills\System\ModuleVersion</item>
+                <item name="bulk_status" xsi:type="object">MagoAssistant\Mago\Service\Skills\System\BulkStatus</item>
             </argument>
         </arguments>
     </type>
