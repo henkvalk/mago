@@ -117,7 +117,7 @@ class IndexCommand extends AbstractToolCommand
     }
 
     /**
-     * Reindex the given indexers one by one, or all of them when no ID is given
+     * Reindex the given indexers one by one, or queue a background rebuild when no ID is given
      *
      * @param string[] $args
      * @param int $adminUserId
@@ -130,24 +130,17 @@ class IndexCommand extends AbstractToolCommand
             return $this->reindexByIds(array_values(array_unique($args)), $adminUserId, $onChunk);
         }
 
+        return $this->reindexAll($adminUserId, $onChunk);
+    }
+
+    private function reindexAll(int $adminUserId, callable $onChunk): string
+    {
         $result = $this->runTool(['action' => 'reindex_all'], $adminUserId, $onChunk);
         if (isset($result['error'])) {
             return $this->renderError((string)$result['error']);
         }
 
-        $reindexed = array_map('strval', (array)($result['reindexed'] ?? []));
-        $errors = array_map('strval', (array)($result['errors'] ?? []));
-
-        $lines = [sprintf('**%d indexer%s reindexed.**', count($reindexed), count($reindexed) === 1 ? '' : 's')];
-        if ($reindexed !== []) {
-            $lines[] = implode(', ', array_map(static fn (string $id): string => '`' . $id . '`', $reindexed));
-        }
-        if ($errors !== []) {
-            $lines[] = '**Failed:**';
-            $lines[] = implode("\n", array_map(static fn (string $error): string => '- ' . $error, $errors));
-        }
-
-        return implode("\n\n", $lines);
+        return '**' . ($result['message'] ?? 'Reindex of all indexers queued') . '.**';
     }
 
     /**

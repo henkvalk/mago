@@ -69,6 +69,25 @@ class InternalApiClient
     }
 
     /**
+     * Queue the call on async.operations.all instead of running it; returns the bulk_uuid
+     *
+     * @param string $endpoint Path after /V1/
+     * @param array<string, mixed> $body
+     * @param int $adminUserId
+     * @param string|null $storeCode See get()
+     * @return array<string, mixed>
+     */
+    public function postAsync(string $endpoint, array $body, int $adminUserId, ?string $storeCode = null): array
+    {
+        return $this->request(
+            InternalRequestOptions::METHOD_POST,
+            $this->buildUrl($endpoint, $storeCode, true),
+            $body,
+            $adminUserId
+        );
+    }
+
+    /**
      * @param string $endpoint Path after /V1/
      * @param array<string, mixed> $body
      * @param int $adminUserId
@@ -161,11 +180,12 @@ class InternalApiClient
      * (/rest/{code}/V1/) runs the call in that store view; "all" runs it in the admin store, so
      * created entities belong to all store views.
      */
-    private function buildUrl(string $endpoint, ?string $storeCode = null): string
+    private function buildUrl(string $endpoint, ?string $storeCode = null, bool $async = false): string
     {
         $endpoint = ltrim($endpoint, '/');
         $storeSegment = $storeCode !== null && $storeCode !== '' ? rawurlencode($storeCode) . '/' : '';
-        return $this->getInternalBaseUrl() . '/rest/' . $storeSegment . 'V1/' . $endpoint;
+        $asyncSegment = $async ? 'async/' : '';
+        return $this->getInternalBaseUrl() . '/rest/' . $storeSegment . $asyncSegment . 'V1/' . $endpoint;
     }
 
     private function getInternalBaseUrl(): string

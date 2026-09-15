@@ -86,23 +86,18 @@ final class IndexCommandTest extends TestCase
     }
 
     #[Test]
-    public function reindexWithoutArgumentRebuildsEverythingAndListsFailures(): void
+    public function reindexWithoutArgumentQueuesABackgroundRebuild(): void
     {
         $chat = new FakeChatService(static fn (array $call): array => [
-            'success' => false,
-            'message' => '1 indexers reindexed',
-            'reindexed' => ['catalog_product_price'],
-            'errors' => ['catalogsearch_fulltext: Elasticsearch is down'],
+            'success' => true,
+            'message' => 'Reindex of all indexers queued',
+            'bulk_uuid' => 'b1c2d3e4',
         ]);
 
         $reply = $this->command($chat)->execute('reindex', [], self::ADMIN_ID, $this->noopChunk());
 
         self::assertSame([['action' => 'reindex_all']], $chat->inputs());
-        self::assertSame(
-            "**1 indexer reindexed.**\n\n`catalog_product_price`\n\n"
-            . "**Failed:**\n\n- catalogsearch_fulltext: Elasticsearch is down",
-            $reply
-        );
+        self::assertSame('**Reindex of all indexers queued.**', $reply);
     }
 
     #[Test]

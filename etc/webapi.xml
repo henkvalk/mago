@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
 
+    <route url="/V1/mago/indexers/reindex-all" method="POST">
+        <service class="MagoAssistant\Mago\Api\WebApi\IndexerManagementInterface" method="reindexAll"/>
+        <resources>
+            <resource ref="Magento_Indexer::invalidate"/>
+        </resources>
+    </route>
+
     <route url="/V1/mago/chat" method="POST">
         <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="sendMessage"/>
         <resources>
