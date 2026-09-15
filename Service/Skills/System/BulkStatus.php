@@ -24,8 +24,13 @@ class BulkStatus implements ToolInterface
     {
         return [
             'type' => 'object',
-            'properties' => [],
-            'required' => [],
+            'properties' => [
+                'bulk_uuid' => [
+                    'type' => 'string',
+                    'description' => 'The ID of the background operation, as returned when it was started',
+                ],
+            ],
+            'required' => ['bulk_uuid'],
         ];
     }
 
