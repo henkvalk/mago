@@ -16,7 +16,7 @@ class IndexerManager implements ActionScopedToolInterface
     private const ACTION_DESCRIPTIONS = [
         'status' => 'list all indexers with status',
         'reindex' => 'reindex a specific indexer by ID, e.g. "catalog_product_price", "catalogsearch_fulltext"',
-        'reindex_all' => 'rebuild all indexers in the background',
+        'reindex_all' => 'reindex all indexers in the background',
         'set_mode' => 'set indexer mode to "realtime" or "schedule"',
     ];
 
