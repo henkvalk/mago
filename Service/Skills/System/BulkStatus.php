@@ -69,18 +69,18 @@ class BulkStatus implements ToolInterface
         }
 
         $operations = [];
-        foreach ($response['operations_list'] ?? [] as $operation) {
+        foreach ($response['operations_list'] as $operation) {
             $operations[] = [
-                'status' => self::STATUS_LABELS[$operation['status'] ?? 0] ?? 'unknown',
-                'message' => $operation['result_message'] ?? '',
+                'status' => self::STATUS_LABELS[$operation['status']] ?? 'unknown',
+                'message' => $operation['result_message'],
                 'result' => $this->getResult($operation),
             ];
         }
 
         return [
             'bulk_uuid' => $bulkUuid,
-            'description' => $response['description'] ?? '',
-            'started_at' => $response['start_time'] ?? '',
+            'description' => $response['description'],
+            'started_at' => $response['start_time'],
             'operations' => $operations,
         ];
     }
