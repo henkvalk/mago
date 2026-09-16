@@ -87,12 +87,15 @@ class IndexerManager implements ActionScopedToolInterface
     public function execute(array $params): array
     {
         $action = $params['action'] ?? '';
+        $indexerId = $params['indexer_id'] ?? '';
+        $adminUserId = (int)($params['_admin_user_id'] ?? 0);
+        $mode = $params['mode'] ?? '';
 
         return match ($action) {
             'status' => $this->getStatus(),
-            'reindex' => $this->reindex($params['indexer_id'] ?? '', (int)($params['_admin_user_id'] ?? 0)),
-            'reindex_all' => $this->reindexAll((int)($params['_admin_user_id'] ?? 0)),
-            'set_mode' => $this->setMode($params['indexer_id'] ?? '', $params['mode'] ?? ''),
+            'reindex' => $this->reindex($indexerId, $adminUserId),
+            'reindex_all' => $this->reindexAll($adminUserId),
+            'set_mode' => $this->setMode($indexerId, $mode),
             default => ['error' => 'Unknown action: ' . $action],
         };
     }
