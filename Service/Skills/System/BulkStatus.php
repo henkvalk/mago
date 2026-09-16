@@ -35,7 +35,9 @@ class BulkStatus implements ToolInterface
 
     public function getDescription(): string
     {
-        return 'Check the status of a background operation by its ID.';
+        return 'Check how a job that was queued earlier is doing, such as a reindex, and report its result '
+            . 'per item. Use this whenever the question is about work already started, rather than about the '
+            . 'current state of the store.';
     }
 
     public function getParameterSchema(): array
@@ -45,7 +47,8 @@ class BulkStatus implements ToolInterface
             'properties' => [
                 'bulk_uuid' => [
                     'type' => 'string',
-                    'description' => 'The ID of the background operation, as returned when it was started.',
+                    'description' => 'The operation ID from the reply that queued the job, '
+                        . 'e.g. "d96f5d12-cca9-47bf-910a-804a4d1d0276".',
                 ],
             ],
             'required' => ['bulk_uuid'],

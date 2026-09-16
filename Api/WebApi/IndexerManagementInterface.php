@@ -15,4 +15,10 @@ interface IndexerManagementInterface
      * @return \MagoAssistant\Mago\Api\Data\IndexerResultInterface[]
      */
     public function reindexAll(): array;
+
+    /**
+     * @param string[] $indexerIds
+     * @return \MagoAssistant\Mago\Api\Data\IndexerResultInterface[]
+     */
+    public function reindex(array $indexerIds): array;
 }

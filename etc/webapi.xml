@@ -8,6 +8,13 @@
         </resources>
     </route>
 
+    <route url="/V1/mago/indexers/reindex" method="POST">
+        <service class="MagoAssistant\Mago\Api\WebApi\IndexerManagementInterface" method="reindex"/>
+        <resources>
+            <resource ref="Magento_Indexer::invalidate"/>
+        </resources>
+    </route>
+
     <route url="/V1/mago/chat" method="POST">
         <service class="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" method="sendMessage"/>
         <resources>
