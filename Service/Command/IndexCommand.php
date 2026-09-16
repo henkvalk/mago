@@ -141,7 +141,7 @@ class IndexCommand extends AbstractToolCommand
         }
 
         $reply = '**' . ($result['message'] ?? 'Reindex of all indexers queued') . '.**';
-        $bulkUuid = (string)($result['bulk_uuid'] ?? '');
+        $bulkUuid = $result['bulk_uuid'] ?? '';
 
         return $bulkUuid ? $reply . "\n\nBulk operation `" . $bulkUuid . '`.' : $reply;
     }
