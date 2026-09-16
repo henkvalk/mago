@@ -35,9 +35,7 @@ class BulkStatus implements ToolInterface
 
     public function getDescription(): string
     {
-        return 'Check how a job that was queued earlier is doing, such as a reindex, and report its result '
-            . 'per item. Use this whenever the question is about work already started, rather than about the '
-            . 'current state of the store.';
+        return 'Check how a job that was queued earlier is doing, such as a reindex.';
     }
 
     public function getParameterSchema(): array
