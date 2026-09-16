@@ -35,7 +35,7 @@ class BulkStatus implements ToolInterface
 
     public function getDescription(): string
     {
-        return 'Check the status of a background (bulk) operation by its ID.';
+        return 'Check the status of a background operation by its ID.';
     }
 
     public function getParameterSchema(): array
@@ -45,7 +45,7 @@ class BulkStatus implements ToolInterface
             'properties' => [
                 'bulk_uuid' => [
                     'type' => 'string',
-                    'description' => 'The ID of the background operation, as returned when it was started',
+                    'description' => 'The ID of the background operation, as returned when it was started.',
                 ],
             ],
             'required' => ['bulk_uuid'],
