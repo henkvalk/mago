@@ -7,15 +7,12 @@ declare(strict_types=1);
 namespace MagoAssistant\Mago\Api\WebApi;
 
 /**
- * Indexer management REST API interface
  * @api
  */
 interface IndexerManagementInterface
 {
     /**
-     * Reindex all indexers
-     *
-     * @return string JSON response
+     * @return \MagoAssistant\Mago\Api\Data\IndexerResultInterface[]
      */
-    public function reindexAll(): string;
+    public function reindexAll(): array;
 }

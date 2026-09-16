@@ -13,6 +13,7 @@
     <!-- WebApi -->
     <preference for="MagoAssistant\Mago\Api\WebApi\ChatManagementInterface" type="MagoAssistant\Mago\Model\WebApi\ChatManagement"/>
     <preference for="MagoAssistant\Mago\Api\WebApi\IndexerManagementInterface" type="MagoAssistant\Mago\Model\WebApi\IndexerManagement"/>
+    <preference for="MagoAssistant\Mago\Api\Data\IndexerResultInterface" type="MagoAssistant\Mago\Model\Data\IndexerResult"/>
 
     <!-- Module Info Repository -->
     <preference for="MagoAssistant\Mago\Api\ModuleInfo\RepositoryInterface" type="MagoAssistant\Mago\Model\ModuleInfo\Repository"/>

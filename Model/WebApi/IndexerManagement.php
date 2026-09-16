@@ -9,9 +9,10 @@ namespace MagoAssistant\Mago\Model\WebApi;
 use Magento\Framework\Indexer\ConfigInterface;
 use Magento\Framework\Indexer\IndexerInterface;
 use Magento\Framework\Indexer\StateInterface;
-use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Indexer\Model\Indexer\CollectionFactory;
 use Magento\Indexer\Model\Processor\MakeSharedIndexValid;
+use MagoAssistant\Mago\Api\Data\IndexerResultInterface;
+use MagoAssistant\Mago\Api\Data\IndexerResultInterfaceFactory;
 use MagoAssistant\Mago\Api\WebApi\IndexerManagementInterface;
 
 class IndexerManagement implements IndexerManagementInterface
@@ -24,11 +25,11 @@ class IndexerManagement implements IndexerManagementInterface
         private readonly CollectionFactory $indexerCollectionFactory,
         private readonly ConfigInterface $config,
         private readonly MakeSharedIndexValid $makeSharedIndexValid,
-        private readonly Json $json
+        private readonly IndexerResultInterfaceFactory $indexerResultFactory
     ) {
     }
 
-    public function reindexAll(): string
+    public function reindexAll(): array
     {
         $result = [];
         $rebuiltSharedIndexes = [];
@@ -36,21 +37,13 @@ class IndexerManagement implements IndexerManagementInterface
         foreach ($this->getIndexers() as $indexer) {
             $indexerId = $indexer->getId();
             if ($indexer->getStatus() === StateInterface::STATUS_WORKING) {
-                $result[] = [
-                    'id' => $indexerId,
-                    'title' => $indexer->getTitle(),
-                    'result' => self::RESULT_LOCKED,
-                ];
+                $result[] = $this->toResult($indexer, self::RESULT_LOCKED);
                 continue;
             }
 
             $sharedIndex = $this->getSharedIndex($indexerId);
             if ($sharedIndex && in_array($sharedIndex, $rebuiltSharedIndexes)) {
-                $result[] = [
-                    'id' => $indexerId,
-                    'title' => $indexer->getTitle(),
-                    'result' => self::RESULT_SHARED,
-                ];
+                $result[] = $this->toResult($indexer, self::RESULT_SHARED);
                 continue;
             }
 
@@ -59,14 +52,20 @@ class IndexerManagement implements IndexerManagementInterface
                 $rebuiltSharedIndexes[] = $sharedIndex;
             }
 
-            $result[] = [
-                'id' => $indexerId,
-                'title' => $indexer->getTitle(),
-                'result' => self::RESULT_REBUILT,
-            ];
+            $result[] = $this->toResult($indexer, self::RESULT_REBUILT);
         }
 
-        return (string)$this->json->serialize(['indexers' => $result]);
+        return $result;
+    }
+
+    private function toResult(IndexerInterface $indexer, string $result): IndexerResultInterface
+    {
+        $indexerResult = $this->indexerResultFactory->create();
+        $indexerResult->setId($indexer->getId());
+        $indexerResult->setTitle($indexer->getTitle());
+        $indexerResult->setResult($result);
+
+        return $indexerResult;
     }
 
     /**
