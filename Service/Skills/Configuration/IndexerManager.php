@@ -151,7 +151,11 @@ class IndexerManager implements ActionScopedToolInterface
             return ['error' => 'indexer_id parameter is required for reindex action'];
         }
 
-        return $this->queue('mago/indexers/reindex', ['indexerIds' => [$indexerId]], $adminUserId);
+        return $this->queue(
+            'mago/indexers/reindex',
+            ['indexerIds' => [$indexerId]],
+            $adminUserId
+        );
     }
 
     private function reindexAll(int $adminUserId): array
