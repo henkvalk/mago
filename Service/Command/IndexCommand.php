@@ -159,9 +159,14 @@ class IndexCommand extends AbstractToolCommand
         $lines = [];
         foreach ($indexerIds as $indexerId) {
             $result = $this->runTool(['action' => 'reindex', 'indexer_id' => $indexerId], $adminUserId, $onChunk);
-            $lines[] = isset($result['error'])
-                ? $this->renderError((string)$result['error'])
-                : '**' . (string)($result['message'] ?? 'Indexer "' . $indexerId . '" reindexed') . '.**';
+            if (isset($result['error'])) {
+                $lines[] = $this->renderError((string)$result['error']);
+                continue;
+            }
+
+            $bulkUuid = $result['bulk_uuid'] ?? '';
+            $lines[] = '**Reindex of `' . $indexerId . '` queued.**'
+                . ($bulkUuid ? "\n\nBulk operation `" . $bulkUuid . '`.' : '');
         }
 
         return implode("\n\n", $lines);

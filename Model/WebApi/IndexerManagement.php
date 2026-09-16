@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Mago\Model\WebApi;
 
+use Magento\Framework\Exception\InputException;
 use Magento\Framework\Indexer\ConfigInterface;
 use Magento\Framework\Indexer\IndexerInterface;
 use Magento\Framework\Indexer\StateInterface;
@@ -31,10 +32,24 @@ class IndexerManagement implements IndexerManagementInterface
 
     public function reindexAll(): array
     {
+        return $this->rebuild($this->getIndexers());
+    }
+
+    public function reindex(array $indexerIds): array
+    {
+        return $this->rebuild($this->getIndexers($indexerIds));
+    }
+
+    /**
+     * @param IndexerInterface[] $indexers
+     * @return IndexerResultInterface[]
+     */
+    private function rebuild(array $indexers): array
+    {
         $result = [];
         $rebuiltSharedIndexes = [];
 
-        foreach ($this->getIndexers() as $indexer) {
+        foreach ($indexers as $indexer) {
             $indexerId = $indexer->getId();
             if ($indexer->getStatus() === StateInterface::STATUS_WORKING) {
                 $result[] = $this->toResult($indexer, self::RESULT_LOCKED);
@@ -69,15 +84,42 @@ class IndexerManagement implements IndexerManagementInterface
     }
 
     /**
+     * @param string[] $indexerIds
      * @return IndexerInterface[]
+     * @throws InputException
      */
-    private function getIndexers(): array
+    private function getIndexers(array $indexerIds = []): array
     {
-        return $this->indexerCollectionFactory->create()->getItems();
+        $available = [];
+        foreach ($this->indexerCollectionFactory->create() as $indexer) {
+            $available[$indexer->getId()] = $indexer;
+        }
+        if ($indexerIds === []) {
+            return array_values($available);
+        }
+
+        $unknown = array_diff($indexerIds, array_keys($available));
+        if ($unknown !== []) {
+            $known = implode(', ', array_keys($available));
+            $message = __(
+                'Unknown indexer(s): %1. Available: %2',
+                implode(', ', $unknown),
+                $known
+            );
+
+            throw new InputException($message);
+        }
+
+        $indexers = [];
+        foreach (array_unique($indexerIds) as $indexerId) {
+            $indexers[] = $available[$indexerId];
+        }
+
+        return $indexers;
     }
 
     private function getSharedIndex(string $indexerId): string
     {
-        return (string)($this->config->getIndexer($indexerId)['shared_index'] ?? '');
+        return $this->config->getIndexer($indexerId)['shared_index'] ?? '';
     }
 }
