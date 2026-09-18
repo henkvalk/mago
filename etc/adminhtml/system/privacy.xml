@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="privacy" translate="label" sortOrder="90" showInDefault="1" showInWebsite="0" showInStore="0">
+        <label>Privacy &amp; Data Retention</label>
+        <attribute type="expanded">1</attribute>
+        <field id="history_retention_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+            <label>Conversation History Retention (Days)</label>
+            <validate>validate-digits</validate>
+            <comment><![CDATA[Conversations, their messages and their PII token vault older than this many days are deleted by a daily cron. 0 keeps them forever. Deleting a conversation also removes its messages and vault entries.]]></comment>
+        </field>
+    </group>
+</include>

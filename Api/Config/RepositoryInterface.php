@@ -18,6 +18,7 @@ interface RepositoryInterface
     public const XML_PATH_EXTENSION_ENABLE = 'mago/general/enabled';
     public const XML_PATH_DEBUG = 'mago/debug/debug';
     public const XML_PATH_PAYLOAD_RETENTION_DAYS = 'mago/debug/payload_retention_days';
+    public const XML_PATH_HISTORY_RETENTION_DAYS = 'mago/privacy/history_retention_days';
     public const XML_PATH_AI_SERVICE = 'mago/api/ai_service';
     public const XML_PATH_MAX_TOKENS = 'mago/api/max_tokens';
     public const XML_PATH_STREAMING = 'mago/api/streaming';
@@ -76,6 +77,11 @@ interface RepositoryInterface
      * @return int
      */
     public function getPayloadRetentionDays(): int;
+
+    /**
+     * @return int
+     */
+    public function getHistoryRetentionDays(): int;
 
     /**
      * Row id of the MageOS_AiBase service the assistant runs on.

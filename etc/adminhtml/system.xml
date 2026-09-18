@@ -24,6 +24,7 @@
             <include path="MagoAssistant_Mago::system/chat.xml"/>
             <include path="MagoAssistant_Mago::system/tools.xml"/>
             <include path="MagoAssistant_Mago::system/docs.xml"/>
+            <include path="MagoAssistant_Mago::system/privacy.xml"/>
             <include path="MagoAssistant_Mago::system/debug.xml"/>
         </section>
     </system>

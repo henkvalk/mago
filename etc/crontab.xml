@@ -9,5 +9,8 @@
         <job name="mago_usage_clean_payloads" instance="MagoAssistant\Mago\Cron\CleanUsageLog" method="execute">
             <schedule>0 3 * * *</schedule>
         </job>
+        <job name="mago_prune_conversations" instance="MagoAssistant\Mago\Cron\PruneConversations" method="execute">
+            <schedule>0 4 * * *</schedule>
+        </job>
     </group>
 </config>

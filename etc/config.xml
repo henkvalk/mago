@@ -21,6 +21,9 @@
             <tools>
                 <max_response_tokens>4000</max_response_tokens>
             </tools>
+            <privacy>
+                <history_retention_days>90</history_retention_days>
+            </privacy>
             <debug>
                 <debug>0</debug>
                 <payload_retention_days>30</payload_retention_days>

@@ -185,6 +185,11 @@ class FakeConfigRepository implements RepositoryInterface
         return 0;
     }
 
+    public function getHistoryRetentionDays(): int
+    {
+        return 0;
+    }
+
     public function getAiServiceId(): string
     {
         return '';
