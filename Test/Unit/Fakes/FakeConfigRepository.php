@@ -14,8 +14,7 @@ class FakeConfigRepository implements RepositoryInterface
     private bool $isInternalSslVerifyEnabled = true;
     private string $internalUrl = '';
     private int $maxToolIterations = 0;
-    private bool $answerWidgets = false;
-    private int $maxResponseTokens = 0;
+    private bool $answerWidgets = false;    private int $maxResponseTokens = 0;
 
     public function withMaxToolIterations(int $maxToolIterations): self
     {
@@ -42,7 +41,6 @@ class FakeConfigRepository implements RepositoryInterface
     {
         return $this->answerWidgets;
     }
-
     public function withInternalSslVerifyEnabled(bool $isEnabled): self
     {
         $this->isInternalSslVerifyEnabled = $isEnabled;

@@ -46,6 +46,25 @@ test('Keeps the conversation when the panel is closed and reopened', async ({pag
   await expect(chatPanel.assistantMessages(page)).toHaveCount(1);
 });
 
+test('Starts a fresh conversation in a second tab instead of sharing the first tab\'s', async ({page, context}) => {
+  await chatMock.install(page, lookupProduct);
+  await chatPanel.openOnDashboard(page);
+  await chatPanel.ask(page, 'Which products contain candle?');
+  await expect(chatPanel.assistantMessages(page)).toHaveCount(1);
+
+  const secondTab = await context.newPage();
+  await chatMock.install(secondTab, lookupProduct);
+  await chatPanel.openOnDashboard(secondTab);
+
+  const streamRequest = secondTab.waitForRequest(/\/mago\/chat\/stream/);
+  await chatPanel.ask(secondTab, 'Which products contain candle?');
+  const body = JSON.parse((await streamRequest).postData() ?? '{}');
+
+  expect(body.conversation_id).toBeNull();
+  await expect(chatPanel.userMessages(secondTab)).toHaveCount(1);
+  await secondTab.close();
+});
+
 test('Filters skills in the slash menu and fills the input on selection', async ({page}) => {
   await chatMock.install(page, lookupProduct);
 

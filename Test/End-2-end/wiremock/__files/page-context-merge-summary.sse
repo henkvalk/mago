@@ -1,0 +1,8 @@
+data: {"id":"chatcmpl-e2e-pagectx-merge-2","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-2","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Diagnosis complete."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-2","object":"chat.completion.chunk","created":1754000021,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":1300,"completion_tokens":6,"total_tokens":1306}}
+
+data: [DONE]
+

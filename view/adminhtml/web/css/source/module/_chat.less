@@ -919,3 +919,11 @@ body.mago-active.mago-fullsize .page-wrapper {
         width: 100vw;
     }
 }
+
+// Field highlight (task 007): decorates fields the assistant just staged a value on. These are
+// Magento's own admin form fields, outside .mago-chat-panel, so this stays a top-level selector.
+.mago-field-changed {
+    outline: 2px solid var(--mago-accent, #E8710A);
+    outline-offset: 2px;
+    border-radius: 2px;
+}

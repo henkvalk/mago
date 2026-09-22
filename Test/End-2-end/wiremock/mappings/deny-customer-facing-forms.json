@@ -1,0 +1,57 @@
+{
+  "mappings": [
+    {
+      "name": "Deny customer-facing forms - forged denied namespace, simple acknowledgement",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Deny Form Ack Check"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-context-ack.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "Deny customer-facing forms - describe check turn 2, refusal after describe_form ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Deny Form Describe Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "deny-form-describe-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "Deny customer-facing forms - describe check turn 1, ask to describe the form",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Deny Form Describe Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    }
+  ]
+}

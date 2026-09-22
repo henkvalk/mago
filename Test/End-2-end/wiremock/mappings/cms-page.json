@@ -8,7 +8,8 @@
         "urlPath": "/v1/chat/completions",
         "bodyPatterns": [
           {"contains": "E2E WireMock check"},
-          {"contains": "\"role\":\"tool\""}
+          {"contains": "\"role\":\"tool\""},
+          {"contains": "skip filler acknowledgements"}
         ]
       },
       "response": {
@@ -26,7 +27,8 @@
         "urlPath": "/v1/chat/completions",
         "bodyPatterns": [
           {"contains": "E2E WireMock check"},
-          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+          {"doesNotMatch": ".*\"role\":\"tool\".*"},
+          {"contains": "skip filler acknowledgements"}
         ]
       },
       "response": {

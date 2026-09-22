@@ -16,6 +16,7 @@ use MagoAssistant\Mago\Logger\ErrorLogger;
 use MagoAssistant\Mago\Service\Ai\AnswerWidgets;
 use MagoAssistant\Mago\Service\Ai\ChatService;
 use MagoAssistant\Mago\Service\Ai\Client;
+use MagoAssistant\Mago\Service\Form\PageContextHolder;
 use MagoAssistant\Mago\Service\Skills\PermissionChecker;
 use MagoAssistant\Mago\Service\Store\StoreScopeContext;
 use MagoAssistant\Mago\Service\Tool\ToolRegistry;
@@ -26,6 +27,7 @@ use MagoAssistant\Mago\Test\Unit\Fakes\FakeConfigRepository;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeIrreversibleAction;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeLogger;
 use MagoAssistant\Mago\Test\Unit\Fakes\FakeSkill;
+use MagoAssistant\Mago\Test\Unit\Fakes\FakeTool;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -36,6 +38,9 @@ final class ChatServiceTest extends TestCase
     private const SYSTEM_PROMPT = 'You are a Magento store assistant.';
 
     private const ADMIN_ID = 7;
+
+    /** 100 tokens is 400 bytes of tool output, small enough to cross in a test and never in life */
+    private const MAX_RESPONSE_TOKENS = 100;
 
     /** @var array<int, array<string, mixed>> Messages the provider received on the last call */
     private array $sentMessages = [];
@@ -104,7 +109,8 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $authorization,
             new StoreScopeContext($this->singleStoreManager()),
-            new AnswerWidgets()
+            new AnswerWidgets(),
+            new PageContextHolder()
         );
     }
 
@@ -452,7 +458,70 @@ final class ChatServiceTest extends TestCase
             $this->createMock(UsageLogger::class),
             $this->createMock(AuthorizationInterface::class),
             new StoreScopeContext($storeManager),
-            new AnswerWidgets()
+            new AnswerWidgets(),
+            new PageContextHolder()
+        );
+    }
+
+    #[Test]
+    public function itStagesTheFormEvenWhenTheToolResultIsTooBigToKeep(): void
+    {
+        $directive = ['action' => 'form_write', 'changes' => [['path' => 'description', 'value' => 'Nieuwe tekst']]];
+        $service = $this->serviceWithTool((new FakeTool('page_form', ['write_fields'], []))->withResult([
+            'staged' => true,
+            'fields' => array_fill(0, 40, str_repeat('a', 500)),
+            'client_directive' => $directive,
+        ]));
+
+        $events = [];
+        $results = $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'write_fields']]],
+            null,
+            function (string $event, array $data) use (&$events): void {
+                $events[] = [$event, $data];
+            }
+        );
+
+        self::assertContains(['form_apply', $directive], $events);
+        self::assertTrue($results['call_1']['_truncated']);
+        self::assertArrayNotHasKey('client_directive', $results['call_1']);
+    }
+
+    #[Test]
+    public function itDoesNotSpendTheResponseBudgetOnWhatOnlyTheBrowserSees(): void
+    {
+        $directive = ['action' => 'form_write', 'changes' => array_fill(0, 40, [
+            'path' => 'description',
+            'value' => str_repeat('a', 500),
+        ])];
+        $service = $this->serviceWithTool((new FakeTool('page_form', ['write_fields'], []))->withResult([
+            'staged' => true,
+            'client_directive' => $directive,
+        ]));
+
+        $results = $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'write_fields']]],
+            null,
+            function (string $event, array $data): void {
+            }
+        );
+
+        self::assertSame(['staged' => true], $results['call_1']);
+    }
+
+    private function serviceWithTool(FakeTool $tool): ChatService
+    {
+        return new ChatService(
+            (new FakeConfigRepository())->withMaxResponseTokens(self::MAX_RESPONSE_TOKENS),
+            $this->createMock(Client::class),
+            new ToolRegistry(null, [$tool]),
+            $this->createMock(DebugLogger::class),
+            $this->createMock(ErrorLogger::class),
+            $this->createMock(UsageLogger::class),
+            $this->createMock(AuthorizationInterface::class),
+            new StoreScopeContext($this->createMock(StoreManagerInterface::class)),
+            new AnswerWidgets(),
+            new PageContextHolder()
         );
     }
 

@@ -245,6 +245,37 @@ public function execute(array $params): array
 
 The `_links` convention is optional — tools work fine without it. But it significantly improves the UX by turning data into actionable navigation. The URL is relative to the admin base URL; the frontend prepends the admin path.
 
+### Client Directives (`client_directive`)
+
+A tool result may also carry a `client_directive` key — a payload meant for the browser itself,
+not for the AI provider. `ChatService` treats it as opaque transport: it does not interpret the
+value, it only forwards it, untouched, as a `form_apply` SSE event (on both the streaming and
+confirmation request paths) and strips the key before the result reaches the provider or gets
+persisted to `mago_message`. This is what lets a tool make the browser *do* something — apply a
+staged value, navigate somewhere — as a side effect of its own result, without `ChatService` ever
+needing to know what that something is.
+
+```php
+public function execute(array $params, int $adminUserId): array
+{
+    return [
+        'staged' => true,
+        'client_directive' => [
+            'type' => 'form_write',
+            // whatever shape the frontend code that reacts to this directive expects
+        ],
+    ];
+}
+```
+
+`page_form` is the first tool to use this channel, with two directive types
+(`form_write`, `form_navigate`) that `view/adminhtml/web/js/chat-panel.js` and
+`view/adminhtml/web/js/form-bridge.js` know how to apply. See
+[`docs/form-access.md`](form-access.md#client_directive-how-a-tool-result-reaches-the-browser) for
+the concrete payload shapes and how the browser handles each one. Like `_links`, this is a
+convention a tool opts into by including the key — nothing about the base `ToolInterface` contract
+requires it.
+
 ### Provider Layer
 
 Providers are not this module's concern. `MageOS_AiBase` owns them — credentials, models,

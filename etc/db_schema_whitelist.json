@@ -23,7 +23,8 @@
             "tool_calls": true,
             "tool_call_id": true,
             "pending_confirmation": true,
-            "created_at": true
+            "created_at": true,
+            "page_context": true
         },
         "constraint": {
             "PRIMARY": true,

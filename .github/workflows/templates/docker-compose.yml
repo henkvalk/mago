@@ -11,5 +11,8 @@ services:
     image: wiremock/wiremock:3.13.1
     container_name: wiremock
     command: ["--verbose", "--disable-banner"]
+    # The specs read WireMock's request journal from the runner host, not only through Magento.
+    ports:
+      - 8080:8080
     volumes:
       - ../../../Test/End-2-end/wiremock:/home/wiremock:ro

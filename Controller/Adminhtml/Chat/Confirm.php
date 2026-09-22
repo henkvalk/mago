@@ -16,6 +16,9 @@ use Magento\Framework\Serialize\Serializer\Json;
 use MagoAssistant\Mago\Api\ChatServiceInterface;
 use MagoAssistant\Mago\Api\ConversationRepositoryInterface;
 use MagoAssistant\Mago\Logger\ErrorLogger;
+use MagoAssistant\Mago\Service\Conversation\NavigationNoteInjector;
+use MagoAssistant\Mago\Service\Form\PageContextHolder;
+use MagoAssistant\Mago\Service\Form\PageContextNormalizer;
 
 class Confirm extends Action implements HttpPostActionInterface
 {
@@ -29,7 +32,10 @@ class Confirm extends Action implements HttpPostActionInterface
         private readonly ConversationRepositoryInterface $conversationRepository,
         private readonly Json $json,
         private readonly ErrorLogger $errorLogger,
-        private readonly FormKey $formKey
+        private readonly FormKey $formKey,
+        private readonly PageContextNormalizer $pageContextNormalizer,
+        private readonly PageContextHolder $pageContextHolder,
+        private readonly NavigationNoteInjector $navigationNoteInjector
     ) {
         parent::__construct($context);
     }
@@ -53,6 +59,10 @@ class Confirm extends Action implements HttpPostActionInterface
             $rawBody = $this->getRequest()->getContent();
             $postData = $this->json->unserialize($rawBody);
             $messageId = (int)($postData['message_id'] ?? 0);
+
+            $rawPageContext = $postData['page_context'] ?? null;
+            $pageContext = $this->pageContextNormalizer->normalize($rawPageContext);
+            $this->pageContextHolder->set($pageContext, $this->pageContextNormalizer->isDenied($rawPageContext));
 
             if (!$messageId) {
                 $this->sendSse('error', ['error' => 'message_id is required']);
@@ -85,15 +95,24 @@ class Confirm extends Action implements HttpPostActionInterface
                 ? array_values(array_map('strval', $postData['tool_call_ids']))
                 : null;
 
+            // The status events carry the server's own measurement per tool, which is the number
+            // the live card prints; keeping it means a reloaded card does not disagree with what
+            // the admin just watched happen.
+            $durations = [];
             $results = $this->chatService->executeConfirmedTools(
                 $toolCalls,
                 $adminUserId,
-                function (string $type, array $data) {
+                function (string $type, array $data) use (&$durations) {
+                    if ($type === 'tool_status' && isset($data['duration_ms'], $data['name'])) {
+                        $durations[(string)$data['name']] = (int)$data['duration_ms'];
+                    }
                     $this->sendSse($type, $data);
                 },
                 $selectedIds
             );
-            $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
+
+            $toolCalls = $this->withResultStatus($toolCalls, $results, $durations);
+            $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId, $toolCalls);
 
             $conversationId = (int)$message['conversation_id'];
             foreach ($results as $toolCallId => $result) {
@@ -108,7 +127,7 @@ class Confirm extends Action implements HttpPostActionInterface
             }
 
             // Stream follow-up AI response
-            $messages = $this->conversationRepository->getMessages($conversationId);
+            $messages = $this->navigationNoteInjector->annotate($this->conversationRepository->getMessages($conversationId));
 
             // Collect tool response IDs to validate tool_call chains
             $toolResponseIds = [];
@@ -180,11 +199,18 @@ class Confirm extends Action implements HttpPostActionInterface
             // the chained confirmation is lost.
             $content = $result['content'] ?? '';
             $pendingConfirmation = !empty($result['pending_confirmation']);
+            // Only what this follow-up turn did of its own accord. The confirmed writes already
+            // sit on the row that asked for them, and repeating them here would tag and trace the
+            // same call twice in a reloaded conversation.
+            $executedTools = $result['tool_calls'] ?? null;
+            if (empty($executedTools)) {
+                $executedTools = $result['executed_tool_calls'] ?? null;
+            }
             $newMessageId = $this->conversationRepository->addMessage(
                 $conversationId,
                 'assistant',
                 $content,
-                $result['tool_calls'] ?? null,
+                $executedTools,
                 $pendingConfirmation
             );
 
@@ -200,6 +226,43 @@ class Confirm extends Action implements HttpPostActionInterface
         }
 
         $this->terminateResponse();
+    }
+
+    /**
+     * The confirmed calls stamped with how each one ended, for the stored row.
+     *
+     * Without this a reloaded conversation knows a write was allowed but not whether it worked,
+     * and shows an approved card for a call that failed.
+     *
+     * @param array<int, array<string, mixed>> $toolCalls
+     * @param array<string, mixed> $results Tool results keyed by tool call id
+     * @param array<string, int> $durations Milliseconds per tool name, from the status events
+     * @return array<int, array<string, mixed>>
+     */
+    private function withResultStatus(array $toolCalls, array $results, array $durations): array
+    {
+        foreach ($toolCalls as $index => $toolCall) {
+            $result = $results[$toolCall['id'] ?? ''] ?? null;
+            if (!is_array($result)) {
+                continue;
+            }
+            if (!empty($result['skipped'])) {
+                $toolCalls[$index]['status'] = 'skipped';
+                continue;
+            }
+            if (isset($result['error'])) {
+                $toolCalls[$index]['status'] = 'failed';
+                $toolCalls[$index]['status_error'] = (string)$result['error'];
+                continue;
+            }
+            $toolCalls[$index]['status'] = 'done';
+            $duration = $durations[(string)($toolCall['name'] ?? '')] ?? null;
+            if ($duration !== null) {
+                $toolCalls[$index]['status_duration_ms'] = $duration;
+            }
+        }
+
+        return $toolCalls;
     }
 
     private function sendSse(string $event, array $data, bool $pad = false): void

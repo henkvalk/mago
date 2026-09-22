@@ -5,6 +5,7 @@
       "Actions/*": ["support/actions/*"],
       "Pages/*": ["support/pages/*"],
       "Services/*": ["support/services/*"],
+      "Config/*": ["support/config/*"],
       "Fixtures/*": ["fixtures/*"]
     }
   }

@@ -7,12 +7,14 @@ declare(strict_types=1);
 namespace MagoAssistant\Mago\Service\Skills;
 
 use Magento\Framework\AuthorizationInterface;
+use MagoAssistant\Mago\Api\Skill\ValidatingActionInterface;
+use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Api\Skill\ActionInterface;
 use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
 use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
 use MagoAssistant\Mago\Api\Tool\IrreversibleToolInterface;
 
-abstract class AbstractSkill implements ActionScopedToolInterface, IrreversibleToolInterface
+abstract class AbstractSkill implements ActionScopedToolInterface, IrreversibleToolInterface, ValidatingToolInterface
 {
     /** @var ActionInterface[] */
     private readonly array $actions;
@@ -133,6 +135,13 @@ abstract class AbstractSkill implements ActionScopedToolInterface, IrreversibleT
         }
 
         return $action->execute($params, (int)($params['_admin_user_id'] ?? 0));
+    }
+
+    public function findRefusal(array $input): ?array
+    {
+        $action = $this->actions[$input['action'] ?? ''] ?? null;
+
+        return $action instanceof ValidatingActionInterface ? $action->findRefusal($input) : null;
     }
 
     public function isReadOnly(): bool

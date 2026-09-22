@@ -16,6 +16,9 @@ final class FakeTool implements ToolInterface
 {
     private int $schemaCalls = 0;
 
+    /** @var array<string, mixed> */
+    private array $result = [];
+
     /**
      * @param string[] $actions
      * @param string[] $readActions
@@ -26,6 +29,16 @@ final class FakeTool implements ToolInterface
         private readonly array $readActions,
         private readonly string $magentoAcl = ''
     ) {
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    public function withResult(array $result): self
+    {
+        $this->result = $result;
+
+        return $this;
     }
 
     public function getName(): string
@@ -59,7 +72,7 @@ final class FakeTool implements ToolInterface
 
     public function execute(array $params): array
     {
-        return ['executed' => $params['action'] ?? ''];
+        return $this->result === [] ? ['executed' => $params['action'] ?? ''] : $this->result;
     }
 
     public function isReadOnly(): bool

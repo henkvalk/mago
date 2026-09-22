@@ -31,7 +31,7 @@ class PeriodParser
                 $now->modify('last day of last month')->format('Y-m-d 23:59:59'),
             ],
             'this_year' => [$now->format('Y-01-01 00:00:00'), $now->format('Y-m-d 23:59:59')],
-            default => $this->parseDateRange($period, $now),
+            default => $this->parseDateRange($period),
         };
     }
 
@@ -51,13 +51,36 @@ class PeriodParser
         };
     }
 
-    private function parseDateRange(string $period, \DateTimeImmutable $now): array
+    private function parseDateRange(string $period): array
     {
-        if (str_contains($period, ':')) {
-            $parts = explode(':', $period);
-            return [$parts[0] . ' 00:00:00', $parts[1] . ' 23:59:59'];
+        if (preg_match('/^(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/', $period, $matches) === 1) {
+            $this->assertValidDate($matches[1], $period);
+            $this->assertValidDate($matches[2], $period);
+            return [$matches[1] . ' 00:00:00', $matches[2] . ' 23:59:59'];
         }
 
-        return [$now->modify('-30 days')->format('Y-m-d 00:00:00'), $now->format('Y-m-d 23:59:59')];
+        if (preg_match('/^(\d{4})-(\d{2})$/', $period, $matches) === 1) {
+            $monthStart = $this->assertValidDate($matches[1] . '-' . $matches[2] . '-01', $period);
+            return [
+                $monthStart->format('Y-m-01 00:00:00'),
+                $monthStart->modify('last day of this month')->format('Y-m-d 23:59:59'),
+            ];
+        }
+
+        throw new \InvalidArgumentException(sprintf(
+            'Unrecognized period "%s". Use "today", "yesterday", "7days", "30days", "this_month", "last_month", '
+            . '"this_year", "YYYY-MM" for a specific month, or "YYYY-MM-DD:YYYY-MM-DD" for a custom range.',
+            $period
+        ));
+    }
+
+    private function assertValidDate(string $date, string $period): \DateTimeImmutable
+    {
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date, new \DateTimeZone('UTC'));
+        if ($parsed === false || $parsed->format('Y-m-d') !== $date) {
+            throw new \InvalidArgumentException(sprintf('Invalid date "%s" in period "%s".', $date, $period));
+        }
+
+        return $parsed;
     }
 }

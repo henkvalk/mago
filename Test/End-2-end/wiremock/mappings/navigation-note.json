@@ -1,0 +1,21 @@
+{
+  "mappings": [
+    {
+      "name": "Navigation note - simple acknowledgement",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Navigation Note Check"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-context-ack.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    }
+  ]
+}

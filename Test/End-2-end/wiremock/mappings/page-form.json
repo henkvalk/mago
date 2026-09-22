@@ -1,0 +1,256 @@
+{
+  "mappings": [
+    {
+      "name": "page_form describe - turn 2, summary after describe_form ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm Describe Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form describe - turn 1, ask to describe the form",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm Describe Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    },
+    {
+      "name": "page_form describe scope - turn 2, summary after describe_form ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm Describe Scope Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form describe scope - turn 1, ask to describe the form",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm Describe Scope Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    },
+    {
+      "name": "page_form describe no values - turn 2, summary after describe_form ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm Describe NoValues Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form describe no values - turn 1, ask to describe the form",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm Describe NoValues Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    },
+    {
+      "name": "page_form no form open - turn 2, summary after describe_form ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm NoForm Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form no form open - turn 1, ask to describe the form",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm NoForm Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-describe-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    },
+    {
+      "name": "page_form read single - turn 2, summary after read_fields ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm ReadField Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-read-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form read single - turn 1, ask to read the field",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm ReadField Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-read-single-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    },
+    {
+      "name": "page_form read multi - turn 2, summary after read_fields ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm ReadFields Multi Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-read-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form read multi - turn 1, ask to read the fields",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm ReadFields Multi Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-read-multi-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    },
+    {
+      "name": "page_form read unknown - turn 2, summary after read_fields ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm UnknownField Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-read-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "page_form read unknown - turn 1, ask to read the unknown field",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E PageForm UnknownField Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-form-read-unknown-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    }
+  ]
+}

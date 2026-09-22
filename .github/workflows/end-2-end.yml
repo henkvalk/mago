@@ -69,6 +69,8 @@ jobs:
           docker exec mage-os-community-edition ./retry "bin/magento config:set mageos_ai/services/configuration '{\"_e2e_row_1\":{\"lmstudio\":{\"base_url\":\"http://wiremock:8080\",\"model\":\"gemma-3-4b-it-qat\"}}}'"
           # Empty means "first usable service", which is the one row above.
           docker exec mage-os-community-edition ./retry "bin/magento config:set mago/api/ai_service ''"
+          # The page context specs assert on what the debug log does and does not record.
+          docker exec mage-os-community-edition ./retry "bin/magento config:set mago/debug/debug 1"
           # One admin session is shared by every parallel worker.
           docker exec mage-os-community-edition ./retry "bin/magento config:set admin/security/admin_account_sharing 1"
           docker exec mage-os-community-edition ./retry "bin/magento config:set admin/security/session_lifetime 86400"
@@ -77,6 +79,8 @@ jobs:
       - name: Prepare Mage-OS
         run: |
           sudo echo "127.0.0.1 magento.test" | sudo tee -a /etc/hosts
+          # The specs use the same http://wiremock:8080 address Magento does, from the runner host.
+          sudo echo "127.0.0.1 wiremock" | sudo tee -a /etc/hosts
           docker exec mage-os-community-edition ./retry "php bin/magento setup:di:compile"
           # The image ships a deployed pub/static. -f only means "deploy in any mode", it does not
           # overwrite, so without this the module's LESS never reaches the theme's styles.css.
@@ -97,6 +101,9 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Run the tests
+        env:
+          # The container's var/log is mounted at mage-os-logs (see the compose file).
+          MAGO_DEBUG_LOG: ${{ github.workspace }}/mage-os-logs/mago-debug.log
         run: |
           cd Test/End-2-end
           FORCE_COLOR=true npx playwright test

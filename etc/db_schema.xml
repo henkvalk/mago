@@ -22,6 +22,7 @@
         <column xsi:type="mediumtext" name="content" nullable="true" comment="Message Content"/>
         <column xsi:type="mediumtext" name="tool_calls" nullable="true" comment="Tool Calls JSON"/>
         <column xsi:type="varchar" name="tool_call_id" nullable="true" length="100" comment="Tool Call ID for tool role messages"/>
+        <column xsi:type="text" name="page_context" nullable="true" comment="Admin page the message was sent from, JSON"/>
         <column xsi:type="boolean" name="pending_confirmation" nullable="false" default="false" comment="Pending Confirmation"/>
         <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">

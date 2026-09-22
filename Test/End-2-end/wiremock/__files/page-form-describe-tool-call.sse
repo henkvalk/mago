@@ -1,0 +1,14 @@
+data: {"id":"chatcmpl-e2e-pageform-describe-1","object":"chat.completion.chunk","created":1754000030,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-1","object":"chat.completion.chunk","created":1754000030,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Let me look at the form."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-1","object":"chat.completion.chunk","created":1754000030,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_e2e_pageform_describe_1","type":"function","function":{"name":"page_form","arguments":""}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-1","object":"chat.completion.chunk","created":1754000030,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"action\":\"describe_form"}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-1","object":"chat.completion.chunk","created":1754000030,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"}"}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-1","object":"chat.completion.chunk","created":1754000030,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":1000,"completion_tokens":40,"total_tokens":1040}}
+
+data: [DONE]
+

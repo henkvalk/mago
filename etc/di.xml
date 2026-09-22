@@ -45,6 +45,7 @@
                 <item name="docs_search" xsi:type="object">MagoAssistant\Mago\Service\Skills\Docs\DocsSearch</item>
                 <item name="module_version" xsi:type="object">MagoAssistant\Mago\Service\Skills\System\ModuleVersion</item>
                 <item name="bulk_status" xsi:type="object">MagoAssistant\Mago\Service\Skills\System\BulkStatus</item>
+                <item name="page_form" xsi:type="object">MagoAssistant\Mago\Service\Skills\Form\PageForm</item>
             </argument>
         </arguments>
     </type>
@@ -151,6 +152,7 @@
         <arguments>
             <argument name="actions" xsi:type="array">
                 <item name="diagnose" xsi:type="object">MagoAssistant\Mago\Service\Skills\Debug\ProductDebug\DiagnoseAction</item>
+                <item name="media_gallery" xsi:type="object">MagoAssistant\Mago\Service\Skills\Debug\ProductDebug\MediaGalleryAction</item>
             </argument>
         </arguments>
     </type>
@@ -225,6 +227,32 @@
                 <item name="update_block" xsi:type="object">MagoAssistant\Mago\Service\Skills\Content\CmsData\UpdateBlockAction</item>
                 <item name="create_page" xsi:type="object">MagoAssistant\Mago\Service\Skills\Content\CmsData\CreatePageAction</item>
                 <item name="create_block" xsi:type="object">MagoAssistant\Mago\Service\Skills\Content\CmsData\CreateBlockAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!--
+        FormPolicy: the deny list an integrator extends without editing the class (matching
+        PageRegistry's additionalPages), for example:
+
+        <type name="MagoAssistant\Mago\Service\Form\FormPolicy">
+            <arguments>
+                <argument name="additionalDeniedNamespacePatterns" xsi:type="array">
+                    <item name="vendor_secret_form" xsi:type="string">vendor_secret_form</item>
+                </argument>
+            </arguments>
+        </type>
+
+        FormPolicy's own defaults already cover every form that carries personal data.
+    -->
+
+    <!-- Skill Actions: PageForm -->
+    <type name="MagoAssistant\Mago\Service\Skills\Form\PageForm">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="describe_form" xsi:type="object">MagoAssistant\Mago\Service\Skills\Form\PageForm\DescribeFormAction</item>
+                <item name="read_fields" xsi:type="object">MagoAssistant\Mago\Service\Skills\Form\PageForm\ReadFieldsAction</item>
+                <item name="write_fields" xsi:type="object">MagoAssistant\Mago\Service\Skills\Form\PageForm\WriteFieldsAction</item>
             </argument>
         </arguments>
     </type>

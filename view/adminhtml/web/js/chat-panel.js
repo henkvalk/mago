@@ -1,5 +1,46 @@
-(function() {
+define([
+    'MagoAssistant_Mago/js/chat/text',
+    'MagoAssistant_Mago/js/chat/i18n',
+    'MagoAssistant_Mago/js/chat/navigate-intent',
+    'MagoAssistant_Mago/js/chat/session-log',
+    'MagoAssistant_Mago/js/chat/confirm-text'
+], function (text, createTranslator, navigateIntent, createSessionLog, createConfirmText) {
+    'use strict';
+
+    var isPlainObject = text.isPlainObject;
+    var esc = text.esc;
+    var skillTitle = text.skillTitle;
+    var toolLabel = text.toolLabel;
+    var summarizeInput = text.summarizeInput;
+    var formatDate = text.formatDate;
+    var formatTime = text.formatTime;
+    var escapeForMarkdown = text.escapeForMarkdown;
+    var codeSpan = text.codeSpan;
+    var previewValue = text.previewValue;
+
     var config = window.MAGO_CONFIG;
+    var storeNavigateIntent = navigateIntent.store;
+    var takeStoredNavigateIntent = navigateIntent.take;
+    var isExpiredNavigateIntent = navigateIntent.isExpired;
+    var translator = createTranslator(config);
+    var t = translator.t;
+    var entityLabel = translator.entityLabel;
+    var describeEntity = translator.describeEntity;
+    var fieldCountText = translator.fieldCountText;
+    var confirmText = createConfirmText(function () { return formBridge; }, translator, text);
+    var findLiveField = confirmText.findLiveField;
+    var liveForm = confirmText.liveForm;
+    var isNavigatingWrite = confirmText.isNavigatingWrite;
+    var describeLiveForm = confirmText.describeLiveForm;
+    var formatFieldChangeLine = confirmText.formatFieldChangeLine;
+    var formatWriteFieldsHeading = confirmText.formatWriteFieldsHeading;
+    var formatWriteFieldsConfirmMessage = confirmText.formatWriteFieldsConfirmMessage;
+    var formatToolConfirmMessage = confirmText.formatToolConfirmMessage;
+    var formatConfirmMessage = confirmText.formatConfirmMessage;
+    var formatTargetDescription = confirmText.formatTargetDescription;
+    var formatRefusalMessage = confirmText.formatRefusalMessage;
+    var failedLabels = confirmText.failedLabels;
+    var formatApplyOutcomeMessage = confirmText.formatApplyOutcomeMessage;
     var formKey = config.formKey;
     var skills = config.skills;
     var commands = config.commands || [];
@@ -14,6 +55,205 @@
     var SS_KEY_OPEN = 'mago_open';
     var SS_KEY_CONV = 'mago_conv';
     var SS_KEY_FULL = 'mago_fullsize';
+    var DIRECTIVE_TYPE_FORM_WRITE = 'form_write';
+    var DIRECTIVE_TYPE_FORM_NAVIGATE = 'form_navigate';
+
+    // A form_navigate directive (task 009) is only good for the one navigation it was issued for;
+    // one minute is comfortably more than a real page load takes and short enough that nothing
+    // left behind by a crashed tab or an abandoned confirmation can plausibly fire later. The form
+    // itself is waited for separately, bounded by NAVIGATE_INTENT_FORM_TIMEOUT_MS below, since a UI
+    // component form registers well after the page's own load event.
+    var NAVIGATE_INTENT_FORM_TIMEOUT_MS = 8000;
+
+    /* Long enough for a Page Builder stage to register on a slow admin, short enough that a form
+       which never settles still sends promptly rather than appearing to hang. */
+    var FORM_SETTLE_TIMEOUT_MS = 3000;
+    var NAVIGATE_STATUS_CLASS = 'mago-navigate-status';
+
+    // send() is synchronous and cannot await a module load, so the bridge is requested once at
+    // startup and held here; a reference that is still null when send() runs means "no form",
+    // never an exception. A stored navigate intent (task 009) is only ever consumed here, once the
+    // bridge that can actually wait for the target form exists.
+    var formBridge = null;
+    require(['MagoAssistant_Mago/js/form-bridge'], function(bridge) {
+        formBridge = bridge;
+        applyStoredNavigateIntent();
+    });
+
+    // Every request the panel posts carries what form-bridge saw at that moment, so the backend
+    // can resolve "this page"/"this field" in the administrator's message. No detection happens
+    // here: a page without a form (or before the bridge has loaded) simply omits page_context. A
+    // denied form (task 003) is the one exception to "omit when there is nothing to report": its
+    // snapshot still carries no field, namespace or entity data, but the denied flag itself is
+    // still sent, which is what lets the backend explain the refusal instead of claiming no form
+    // is open at all.
+    function buildPageContext(settled) {
+        if (!formBridge) return null;
+        var snapshot = formBridge.snapshot();
+        if (!snapshot.hasForm && !snapshot.denied) return null;
+        snapshot.route = window.location.pathname;
+        // whenFieldsSettled reports settled === false when the field count never stopped moving
+        // within the timeout: the form was still registering fields, so this list may be short a
+        // few that had not appeared yet. Mark it truncated so the backend warns the model it cannot
+        // see the whole form, exactly as it does for a count-capped snapshot. Any other caller
+        // passes nothing (settled === undefined) and the snapshot stands as taken.
+        if (settled === false && snapshot.hasForm && snapshot.truncated) {
+            snapshot.truncated.fields = true;
+        }
+        return snapshot;
+    }
+
+
+    // apply() itself waits on a real signal (its form's provider component, task 009) before
+    // writing a single field, so it reports its outcome through a callback rather than a return
+    // value; onOutcome is always invoked exactly once, with null for a directive this dispatches on
+    // nothing (an unknown type, or a form_navigate, whose outcome belongs to the page it navigates
+    // to rather than this one).
+    function applyFormDirective(directive, onOutcome) {
+        if (!isPlainObject(directive) || !formBridge) {
+            onOutcome(null);
+
+            return;
+        }
+
+        if (directive.type === DIRECTIVE_TYPE_FORM_WRITE) {
+            if (typeof formBridge.apply === 'function') {
+                formBridge.apply(directive, onOutcome);
+            } else {
+                onOutcome(null);
+            }
+
+            return;
+        }
+
+        if (directive.type === DIRECTIVE_TYPE_FORM_NAVIGATE && directive.url) {
+            storeNavigateIntent(directive);
+            showNavigateStatus(t('Opening %1...', formatTargetDescription(directive.target)));
+            window.location.href = directive.url;
+        }
+
+        onOutcome(null);
+    }
+
+    // The browser leaves for the target page the moment form_navigate arrives, but a product edit
+    // page takes a few seconds to answer, and the target page then waits for its form to register
+    // before anything is staged. Without this the panel simply goes quiet for that whole stretch.
+    // The status is a message of its own, with the same spinner a running tool shows, and locks
+    // the input for as long as it is up; on the page being left it also stays the last thing in
+    // the panel when the model's reply and the "done" event land after it.
+    function showNavigateStatus(text) {
+        hideNavigateStatus();
+        var el = document.createElement('div');
+        el.className = 'mago-message is-assistant ' + NAVIGATE_STATUS_CLASS;
+        el.innerHTML = '<div class="mago-tool-status"><span class="mago-tool-status-spinner"></span>'
+            + '<span class="mago-tool-status-text">' + esc(text) + '</span></div>';
+        msgs.insertBefore(el, loading);
+        msgs.scrollTop = msgs.scrollHeight;
+        lockInput();
+    }
+
+    function hideNavigateStatus() {
+        var el = navigateStatusElement();
+        if (!el) return;
+        el.remove();
+        unlockInput();
+    }
+
+    function navigateStatusElement() {
+        return msgs.querySelector('.' + NAVIGATE_STATUS_CLASS);
+    }
+
+    function keepNavigateStatusLast() {
+        var el = navigateStatusElement();
+        if (!el) return;
+        msgs.insertBefore(el, loading);
+        msgs.scrollTop = msgs.scrollHeight;
+        lockInput();
+    }
+
+    // The navigate status shows a spinner of its own, so the panel's own one stays hidden for as
+    // long as the status holds the lock.
+    function lockInput() {
+        setBusy(true);
+        loading.style.display = 'none';
+    }
+
+    // Every place a turn ends releases the input through here, so the end of the turn that started
+    // a navigation does not re-enable it underneath the status the navigation is still showing.
+    // The status itself is what releases the input, once the target page has staged its fields or
+    // given up waiting for the form.
+    function releaseInput() {
+        loading.style.display = 'none';
+        if (navigateStatusElement()) return;
+        unlockInput();
+    }
+
+    function unlockInput() {
+        setBusy(false);
+    }
+
+
+
+
+
+
+
+
+
+    function formatNavigateTimeoutMessage(target) {
+        return t('Navigated to %1, but its form did not load in time. Nothing was changed. Ask me again now that the page is open.', formatTargetDescription(target));
+    }
+
+    // Runs once per page load (from the require() callback above, once form-bridge itself is
+    // ready). A stored intent only ever names the page the assistant sent the administrator to; it
+    // is proven against whatever form actually shows up here, not trusted, by replaying it as an
+    // ordinary form_write directive through the exact same apply()/isSameTarget guard task 008
+    // already built for a directive that arrives while its form is already open. A wrong-entity
+    // landing is refused the same way, not applied and then explained away.
+    function applyStoredNavigateIntent() {
+        var intent = takeStoredNavigateIntent();
+        if (!intent || !intent.target || !intent.target.entity_type) return;
+        if (isExpiredNavigateIntent(intent)) return;
+        if (!formBridge || typeof formBridge.whenFormReady !== 'function') return;
+
+        var entityType = intent.target.entity_type;
+
+        showNavigateStatus(t('Waiting for the form on %1...', formatTargetDescription(intent.target)));
+
+        formBridge.whenFormReady(entityType, NAVIGATE_INTENT_FORM_TIMEOUT_MS, function (found) {
+            if (!found) {
+                hideNavigateStatus();
+                addMsg('assistant', renderMd(formatNavigateTimeoutMessage(intent.target)));
+                return;
+            }
+
+            formBridge.apply({
+                type: DIRECTIVE_TYPE_FORM_WRITE,
+                target: {
+                    namespace: entityType + '_form',
+                    entity_type: entityType,
+                    entity_id: intent.target.entity_id || '',
+                    store_id: intent.target.store_id || '',
+                    is_new: intent.target.is_new === true
+                },
+                changes: intent.changes
+            }, function (result) {
+                hideNavigateStatus();
+                reportApplyOutcome(result);
+            });
+        });
+    }
+
+
+
+
+
+    function reportApplyOutcome(result) {
+        if (!result) return;
+        var text = formatApplyOutcomeMessage(result);
+        if (!text) return;
+        addMsg('assistant', renderMd(text));
+    }
 
     function saveState() {
         try {
@@ -41,9 +281,15 @@
     }
 
     function clearMsgs() {
+        var hadNavigateStatus = !!navigateStatusElement();
         var nodes = msgs.querySelectorAll('.mago-message, .mago-date-sep');
         for (var i = 0; i < nodes.length; i++) nodes[i].remove();
         loading.style.display = 'none';
+
+        // Starting a new chat or loading another conversation throws the navigate status away with
+        // everything else, and the lock it holds on the input has to go with it, or the panel is
+        // left unable to send anything.
+        if (hadNavigateStatus) unlockInput();
     }
 
     // The header subtitle names the conversation being viewed; empty on a fresh chat.
@@ -199,62 +445,25 @@
         slashMenu.classList.add('is-visible');
     }
 
-    // "cms_data" reads as "Cms data" in a card title; the mono badge keeps the real name.
-    function skillTitle(toolName) {
-        var t = String(toolName || '').replace(/_/g, ' ');
-        return t.charAt(0).toUpperCase() + t.slice(1);
-    }
 
-    // "Cms data · create_page": how one tool call is named in a list.
-    function toolLabel(tool) {
-        var action = tool.input && tool.input.action ? ' · ' + tool.input.action : '';
-        return skillTitle(tool.name) + action;
-    }
 
-    // The first few parameters on one line, for a bulk row: "identifier: summer-sale, title: Summer Sale".
-    function summarizeInput(input) {
-        var parts = [];
-        Object.keys(input || {}).forEach(function(k) {
-            if (k === 'action' || parts.length >= 3) return;
-            var v = input[k];
-            if (v === null || v === undefined || v === '') return;
-            v = typeof v === 'object' ? JSON.stringify(v) : String(v);
-            parts.push(k + ': ' + (v.length > 40 ? v.slice(0, 37) + '…' : v));
-        });
-        return parts.join(', ');
-    }
 
     // S12: every write the assistant ran (or skipped, or that failed) in this browser session,
     // kept in sessionStorage so it survives the page loads an admin makes between questions.
-    var SS_KEY_LOG = 'mago_log';
     var logBtn = qs('#mago-log');
     var logView = qs('#mago-log-view');
+    var sessionLog = createSessionLog(logBtn, UI);
     var showingLog = false;
 
-    function readLog() {
-        try { return JSON.parse(sessionStorage.getItem(SS_KEY_LOG) || '[]'); } catch(e) { return []; }
-    }
 
-    function logWrite(title, action, state) {
-        var entries = readLog();
-        entries.unshift({
-            text: title + (action ? ' · ' + action : '') + (state === 'skipped' ? ' (not run)' : state === 'failed' ? ' (failed)' : ''),
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
-            tone: state === 'failed' ? 'danger' : state === 'skipped' ? 'muted' : undefined
-        });
-        try { sessionStorage.setItem(SS_KEY_LOG, JSON.stringify(entries.slice(0, 50))); } catch(e) {}
-        if (logBtn) logBtn.classList.toggle('has-entries', entries.length > 0);
-    }
 
     function showLog() {
         if (!logView) return;
         if (showingHistory) hideHistory();
         showingLog = true;
-        var entries = readLog();
+        var entries = sessionLog.read();
         logView.innerHTML = '';
-        logView.appendChild(entries.length
-            ? UI.sessionLog({title: 'Changes this session', entries: entries})
-            : UI.empty({title: 'No changes yet', text: 'Every write the assistant runs in this session is listed here.', icon: 'list'}));
+        logView.appendChild(sessionLog.render(entries));
         msgs.style.display = 'none';
         loading.style.display = 'none';
         inputArea.style.display = 'none';
@@ -273,7 +482,7 @@
 
     if (logBtn) {
         logBtn.onclick = function() { if (showingLog) hideLog(); else showLog(); };
-        logBtn.classList.toggle('has-entries', readLog().length > 0);
+        logBtn.classList.toggle('has-entries', sessionLog.hasEntries());
     }
 
     function hideSlashMenu() {
@@ -365,22 +574,7 @@
     };
     sendBtn.onclick = send;
 
-    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    function formatDate(dateStr) {
-        if (!dateStr) return '';
-        var d = new Date(dateStr.replace(' ', 'T') + 'Z');
-        var now = new Date();
-        var diff = now - d;
-        if (diff < 86400000) {
-            return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        }
-        if (diff < 604800000) {
-            var days = Math.floor(diff / 86400000);
-            return days + 'd ago';
-        }
-        return d.toLocaleDateString([], {month:'short', day:'numeric'});
-    }
 
     function loadHistory() {
         if (showingLog) hideLog();
@@ -460,10 +654,37 @@
                 showGreeting();
                 return;
             }
+            // Tool calls live on the assistant row that ran them, but the answer they produced is
+            // the next row, so they are carried forward until there is a bubble to hang them on.
+            var pendingTools = [];
             loaded.forEach(function(m) {
-                if (m.role === 'user' || m.role === 'assistant') {
+                var tools = parseToolCalls(m);
+                if (m.role === 'assistant' && tools.length) {
+                    pendingTools = pendingTools.concat(tools);
+                }
+
+                var isConfirmRow = m.role === 'assistant' && !(m.content || '').trim() && tools.length;
+                if (isConfirmRow) {
                     addDateSep(m.created_at);
-                    addMsg(m.role, renderMd(m.content || ''), m.created_at);
+                    // No timestamp: live this bubble only ever holds the card, and the time of the
+                    // turn is printed under the answer that follows it.
+                    var confirmEl = addMsg('assistant', '');
+                    replayTools(confirmEl, pendingTools, tools);
+                    pendingTools = [];
+                    if (parseInt(m.pending_confirmation, 10) === 1) {
+                        showConfirmButtons(confirmEl, {messageId: m.entity_id}, tools);
+                    } else {
+                        restoreWriteResult(confirmEl, tools);
+                    }
+                } else if ((m.role === 'user' || m.role === 'assistant') && (m.content || '').trim()) {
+                    addDateSep(m.created_at);
+                    // No timestamp: a live bubble never carries one, and a reloaded conversation
+                    // that grows them is not the same conversation the admin was just looking at.
+                    var msgEl = addMsg(m.role, renderMd(m.content));
+                    if (m.role === 'assistant' && pendingTools.length) {
+                        replayTools(msgEl, pendingTools);
+                        pendingTools = [];
+                    }
                 }
             });
             saveState();
@@ -573,11 +794,6 @@
         }
     }
 
-    function formatTime(dateStr) {
-        if (!dateStr) return '';
-        var d = new Date(dateStr.replace(' ', 'T') + 'Z');
-        return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
 
     function addMsg(role, html, timestamp) {
         var cls = role === 'user' ? 'is-user' : 'is-assistant';
@@ -655,6 +871,74 @@
         }
     });
 
+    // An answered write comes back as the card it ended on: the S03 line with its request and
+    // duration, the S04 card when it failed, or a muted line when it was declined. Without the
+    // stored outcome there is nothing to tell these apart, so the row stays as it was asked.
+    function restoreWriteResult(msgEl, tools) {
+        var first = tools[0] || null;
+        if (!first || !first.status) return;
+
+        var title = skillTitle(first.name);
+        var failed = tools.filter(function(t) { return t.status === 'failed'; })[0];
+        if (failed) {
+            msgEl.appendChild(UI.skillFailed({
+                title: title + ' failed',
+                text: failed.status_error || 'The action did not complete.',
+                code: tools.length === 1 ? failed.name : null
+            }));
+            return;
+        }
+
+        // The live card sums every tool in the run; the restored one has to add up the same way
+        // or a bulk confirmation comes back showing only its first action's time.
+        var total = tools.reduce(function(sum, t) { return sum + (parseInt(t.status_duration_ms, 10) || 0); }, 0);
+        var single = tools.length === 1 ? first : null;
+        msgEl.appendChild(UI.skillLine({
+            title: title,
+            action: single && single.input ? single.input.action : null,
+            duration: formatDuration(total),
+            state: first.status === 'skipped' ? 'skipped' : 'done',
+            request: single ? single.input : undefined
+        }));
+    }
+
+    // The live card measures in the browser and prints one decimal with a comma; a restored one
+    // reads the server's milliseconds and has to land on the same shape.
+    function formatDuration(ms) {
+        var value = parseInt(ms, 10);
+        if (!value) return undefined;
+
+        return (value / 1000).toFixed(1).replace('.', ',') + 's';
+    }
+
+    // Draw a stored row's tools the way the live stream drew them: the tag, then the read-only
+    // line with the outcome it ended on. A call that was denied or left unticked stored no status
+    // and gets no line, exactly as it had none while the answer streamed.
+    function replayTools(msgEl, tools, cardTools) {
+        tools.forEach(function(t) {
+            if (!t.name) return;
+            addToolTag(msgEl, t.name);
+            // A write is drawn as its own result card, which is what it collapsed into live; a
+            // read line beside it would be a step the admin never saw.
+            if (cardTools && cardTools.indexOf(t) !== -1) return;
+            if (t.status !== 'done' && t.status !== 'failed') return;
+            updateToolStatus(msgEl, t.name, 'running', t.status_message);
+            updateToolStatus(msgEl, t.name, t.status, t.status_error);
+        });
+    }
+
+    // Stored tool calls come back as a JSON string from the database and as an array from the
+    // stream, and a half-written row can hold neither.
+    function parseToolCalls(m) {
+        if (!m || !m.tool_calls) return [];
+        try {
+            var tc = typeof m.tool_calls === 'string' ? JSON.parse(m.tool_calls) : m.tool_calls;
+            return Array.isArray(tc) ? tc : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
     function addToolTag(msgEl, toolName) {
         var tags = msgEl.querySelector('.mago-tool-tags');
         if (!tags) return;
@@ -670,6 +954,20 @@
         msgEl.appendChild(UI.callout({tone: 'danger', text: text || 'Unknown error'}));
         msgs.scrollTop = msgs.scrollHeight;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     function showGreeting() {
         chat.classList.add('is-empty');
@@ -702,10 +1000,24 @@
         var content = null;
         var full = '';
 
+        /* The form's fields register over several ticks, and a Page Builder field only once its
+           stage has initialised. Sending straight away describes a form that is genuinely missing
+           fields, and nothing downstream can tell that from a form that really has none, so the
+           request waits for the count to stop moving. Bounded, because a form that never settles
+           must not hold the message hostage: the snapshot is sent as-is and reports itself early. */
+        if (!formBridge) {
+            postMessage();
+
+            return;
+        }
+
+        formBridge.whenFieldsSettled(FORM_SETTLE_TIMEOUT_MS, postMessage);
+
+        function postMessage(settled) {
         fetch(config.streamUrl, {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-            body: JSON.stringify({message:text, conversation_id:conversationId, form_key:formKey}),
+            body: JSON.stringify({message:text, conversation_id:conversationId, form_key:formKey, page_context:buildPageContext(settled)}),
             credentials: 'same-origin'
         }).then(function(r) {
             if (!r.ok) {
@@ -722,6 +1034,24 @@
             var buf = '', evt = '';
             var gotDone = false;
             var writeToolDetected = false;
+            var applyResult = null;
+            var applyPending = false;
+            var doneReached = false;
+
+            // apply() now waits on a real signal (its form's provider component, task 009) before
+            // writing anything, so its outcome can arrive after the "done" event that already ended
+            // the turn. Whichever of the two happens second is what reports it, so the outcome
+            // message still lands after the model's own reply either way, exactly as it did when
+            // apply() was synchronous.
+            function handleApplyOutcome(result) {
+                applyPending = false;
+                applyResult = result;
+
+                if (doneReached) {
+                    reportApplyOutcome(applyResult);
+                    applyResult = null;
+                }
+            }
 
             function processLine(ln) {
                 ln = ln.trim();
@@ -741,22 +1071,29 @@
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                         updateToolStatus(msg, d.name, d.status, d.message);
                     }
+                    else if (evt==='form_apply') { applyPending = true; applyFormDirective(d, handleApplyOutcome); }
                     else if (evt==='confirm') {
                         writeToolDetected = true;
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
-                        setBusy(false);
-                        showConfirmButtons(msg, conversationId, d.tools || []);
+                        releaseInput();
+                        showConfirmButtons(msg, {conversationId: conversationId}, d.tools || []);
                     }
                     else if (evt==='done') {
                         gotDone = true;
                         if(d.conversation_id) conversationId=d.conversation_id;
-                        saveState(); setBusy(false);
+                        saveState(); releaseInput();
                         if (d.pending_confirmation && msg && !writeToolDetected) {
-                            showConfirmButtons(msg, d.message_id || conversationId, []);
+                            showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
                         }
                         if (!d.pending_confirmation && writeToolDetected) {
                             writeToolDetected = false;
                         }
+                        doneReached = true;
+                        if (!applyPending) {
+                            reportApplyOutcome(applyResult);
+                            applyResult = null;
+                        }
+                        keepNavigateStatusLast();
                     }
                     else if (evt==='error') {
                         if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
@@ -770,24 +1107,32 @@
                 var lines = buf.split('\n'); buf = res.done ? '' : lines.pop();
                 lines.forEach(processLine);
                 if (res.done || gotDone) {
-                    setBusy(false);
+                    releaseInput();
                     return;
                 }
                 return reader.read().then(read);
             }
             return reader.read().then(read);
         }).catch(function(e) {
-            setBusy(false);
+            releaseInput();
             if (!msg) { msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
             showError(msg, 'Connection error: ' + e.message);
         });
+        }
     }
 
     // S01: a write action asks first. The card names the skill, lists the
     // parameters it will run with and offers Allow / Not now. Once allowed it
     // turns into the S02 progress card, and when the run finishes into the S03
     // collapsed line; "Not now" leaves a muted line and no call is made.
-    function showConfirmButtons(msgEl, messageIdOrConvId, tools) {
+    function isFormWrite(tool) {
+        return !!tool && tool.name === 'page_form' && !!tool.input && tool.input.action === 'write_fields';
+    }
+
+    // ids = {messageId, conversationId}: the confirm endpoints key on the message that asked,
+    // so a caller that already knows it says so and the rest is looked up from the conversation.
+    function showConfirmButtons(msgEl, ids, tools) {
+        ids = ids || {};
         // Prevent duplicate confirm cards
         if (msgEl.querySelector('.mago-confirm-actions')) return;
 
@@ -795,6 +1140,15 @@
         var first = tools[0] || null;
         var title = first ? skillTitle(first.name) : 'Confirm action';
         var text = first && first.description ? first.description : 'I want to perform an action. Allow this?';
+
+        /* A form write is the one confirmation the tool's own description cannot describe: what
+           matters is which fields change and from what, read off the form open right now. That
+           sentence is built in chat/confirm-text.js and rendered as markdown here, so it replaces
+           both the description and the parameter table, which would otherwise show the raw
+           directive JSON. Every other tool keeps the generic card. */
+        var formWriteMessage = isFormWrite(first)
+            ? {html: renderMd(formatConfirmMessage(tools))}
+            : null;
         var hooks = {actions: 'mago-confirm-actions', allow: 'mago-btn--confirm', confirm: 'mago-btn--confirm', later: 'mago-btn--reject', cancel: 'mago-btn--reject'};
         var irreversible = tools.filter(function(t) { return t.irreversible; });
         var card;
@@ -833,8 +1187,8 @@
             card = UI.skillAsk({
                 title: title,
                 tool: first ? first.name : null,
-                text: text,
-                params: first ? UI.paramsFromInput(first.input) : [],
+                text: formWriteMessage || text,
+                params: formWriteMessage || !first ? [] : UI.paramsFromInput(first.input),
                 classes: hooks,
                 onAllow: function() { decide(true); },
                 onLater: function() { decide(false); }
@@ -859,23 +1213,29 @@
                     handleConfirm(mid, run);
                 } else {
                     card.replaceWith(UI.skillLine({title: title, action: first && first.input ? first.input.action : null, state: 'skipped'}));
-                    logWrite(title, first && first.input ? first.input.action : null, 'skipped');
+                    sessionLog.write(title, first && first.input ? first.input.action : null, 'skipped');
                     handleReject(mid);
                 }
             });
         }
 
         function getMessageId(callback) {
-            // If we already have a message_id from the done event, use it
-            if (messageIdOrConvId > 10000) {
-                callback(messageIdOrConvId);
+            var messageId = parseInt(ids.messageId, 10);
+            if (messageId) {
+                callback(messageId);
                 return;
             }
-            // Otherwise fetch it from the status endpoint using conversation_id
+
+            var conversationId = parseInt(ids.conversationId, 10);
+            if (!conversationId) {
+                failLookup('The action could not be linked to this conversation.');
+                return;
+            }
+
             fetch(config.statusUrl, {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
-                body: JSON.stringify({conversation_id: messageIdOrConvId, form_key: formKey}),
+                body: JSON.stringify({conversation_id: conversationId, form_key: formKey}),
                 credentials: 'same-origin'
             }).then(function(r) { return r.json(); }).then(function(d) {
                 if (d.message_id) {
@@ -887,6 +1247,17 @@
             }).catch(function() {
                 setTimeout(function() { getMessageId(callback); }, 1000);
             });
+        }
+
+        // The spinner replaced the buttons, so a lookup that cannot resolve has to hand the card
+        // back rather than sit there: the write never ran and the admin can still ask again.
+        function failLookup(text) {
+            card.replaceWith(UI.skillFailed({
+                title: title + ' failed',
+                text: text,
+                code: first ? first.name : null
+            }));
+            setBusy(false);
         }
     }
 
@@ -903,7 +1274,9 @@
             if (!run || !run.card || !run.card.parentNode) return;
             var first = run.tools && run.tools[0];
             var action = run.tools && run.tools.length === 1 && first && first.input ? first.input.action : null;
-            var seconds = ((Date.now() - run.startedAt) / 1000).toFixed(1).replace('.', ',') + 's';
+            var seconds = run.durationMs
+                ? formatDuration(run.durationMs)
+                : ((Date.now() - run.startedAt) / 1000).toFixed(1).replace('.', ',') + 's';
             if (state === 'failed') {
                 run.card.replaceWith(UI.skillFailed({
                     title: run.title + ' failed',
@@ -921,12 +1294,12 @@
             }
             (run.tools || []).forEach(function(t, i) {
                 var skipped = run.skipped && run.skipped.indexOf(t) !== -1;
-                logWrite(skillTitle(t.name), t.input ? t.input.action : null, skipped ? 'skipped' : state);
+                sessionLog.write(skillTitle(t.name), t.input ? t.input.action : null, skipped ? 'skipped' : state);
             });
             run.card = null;
         }
 
-        var body = {message_id: messageId, form_key: formKey};
+        var body = {message_id: messageId, form_key: formKey, page_context: buildPageContext()};
         if (run && run.selected) {
             body.tool_call_ids = run.selected;
         }
@@ -940,7 +1313,7 @@
             var ct = r.headers.get('content-type') || '';
             if (ct.indexOf('text/event-stream') === -1) {
                 return r.json().then(function(d) {
-                    setBusy(false);
+                    releaseInput();
                     finishRun(d.error ? 'failed' : 'done');
                     if (d.error) showError(addMsg('assistant', ''), d.error);
                 });
@@ -950,6 +1323,23 @@
             var buf = '', evt = '';
             var failed = false;
             var activeStep = null;
+
+            var applyResult = null;
+            var applyPending = false;
+            var doneReached = false;
+
+            // See send()'s own copy of this same helper: apply() waits on a real signal (its form's
+            // provider component, task 009) before writing anything, so its outcome can arrive after
+            // the "done" event that already ended the turn.
+            function handleApplyOutcome(result) {
+                applyPending = false;
+                applyResult = result;
+
+                if (doneReached) {
+                    reportApplyOutcome(applyResult);
+                    applyResult = null;
+                }
+            }
 
             function processLine(ln) {
                 ln = ln.trim();
@@ -979,18 +1369,28 @@
                                 activeStep = null;
                                 run.card.magoUpdate({progress: 90});
                             }
+                            // The server timed the write itself. Printing its number instead of
+                            // the round trip keeps the card the same after a reload.
+                            if (d.duration_ms) { run.durationMs = (run.durationMs || 0) + d.duration_ms; }
                         } else {
                             if (!msg) { loading.style.display='none'; msg=addMsg('assistant',''); content=msg.querySelector('.mago-message-content'); }
                             updateToolStatus(msg, d.name, d.status, d.message);
                         }
                     }
+                    else if (evt==='form_apply') { applyPending = true; applyFormDirective(d, handleApplyOutcome); }
                     else if (evt==='done') {
                         if (d.conversation_id) conversationId=d.conversation_id;
-                        saveState(); setBusy(false);
+                        saveState(); releaseInput();
                         finishRun(failed ? 'failed' : 'done');
-                        if (d.pending_confirmation && msg) {
-                            showConfirmButtons(msg, d.message_id || conversationId, []);
+                        doneReached = true;
+                        if (!applyPending) {
+                            reportApplyOutcome(applyResult);
+                            applyResult = null;
                         }
+                        if (d.pending_confirmation && msg) {
+                            showConfirmButtons(msg, {messageId: d.message_id, conversationId: conversationId}, []);
+                        }
+                        keepNavigateStatusLast();
                     }
                     else if (evt==='error') {
                         failed = true;
@@ -1008,7 +1408,7 @@
                         var lines = buf.split('\n');
                         lines.forEach(processLine);
                     }
-                    setBusy(false);
+                    releaseInput();
                     finishRun(failed ? 'failed' : 'done');
                     return;
                 }
@@ -1019,7 +1419,7 @@
             }
             return reader.read().then(read);
         }).catch(function(e) {
-            setBusy(false);
+            releaseInput();
             finishRun('failed');
             showError(addMsg('assistant', ''), 'Error confirming action: ' + e.message);
         });
@@ -1032,7 +1432,7 @@
             body: JSON.stringify({message_id: messageId, form_key: formKey}),
             credentials: 'same-origin'
         }).then(function(r) { return r.json(); }).then(function(d) {
-            addMsg('assistant', renderMd('Action rejected. No changes were made.'));
+            addMsg('assistant', renderMd(t('Action rejected. No changes were made.')));
         }).catch(function(e) {
             showError(addMsg('assistant', ''), e.message);
         });
@@ -1060,4 +1460,4 @@
             openPanel();
         }
     } catch(e) {}
-})();
+});

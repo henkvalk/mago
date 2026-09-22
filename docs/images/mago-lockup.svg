@@ -1,0 +1,36 @@
+<svg viewBox="0 0 700 256" width="700" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;700&amp;display=swap');
+      .text-bold { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 80px; fill: #FFFFFF; }
+      .text-light { font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 80px; fill: #FFFFFF; }
+    </style>
+    <linearGradient id="mago-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF7A33" />
+      <stop offset="100%" stop-color="#E65000" />
+    </linearGradient>
+    <pattern id="tech-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  
+  <!-- Icon -->
+  <g transform="translate(0, 0)">
+    <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#mago-bg)" />
+    <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#tech-grid)" />
+    <g fill="#FFFFFF">
+      <polyline points="64,88 128,72 192,88" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-dasharray="4 4" />
+      <line x1="128" y1="72" x2="128" y2="136" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-dasharray="4 4" />
+      <polygon points="64,72 80,88 64,104 48,88" opacity="0.75" />
+      <polygon points="192,72 208,88 192,104 176,88" opacity="0.75" />
+      <polygon points="128,40 160,72 128,104 96,72" />
+      <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208" />
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="290" y="155">
+    <tspan class="text-bold" letter-spacing="-2">Mago</tspan>
+    <tspan class="text-light" letter-spacing="-2" dx="15">Core</tspan>
+  </text>
+</svg>

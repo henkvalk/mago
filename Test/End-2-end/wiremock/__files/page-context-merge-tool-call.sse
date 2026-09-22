@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Sure, "},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"let me diagnose that."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_e2e_pagectx_merge_1","type":"function","function":{"name":"product_debug","arguments":""}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"action\":\"diagnose"}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\",\"sku\":\"e2e-page-context-check\"}"}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pagectx-merge-1","object":"chat.completion.chunk","created":1754000020,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":1000,"completion_tokens":40,"total_tokens":1040}}
+
+data: [DONE]
+

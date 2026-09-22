@@ -177,8 +177,12 @@ class Repository implements ConversationRepositoryInterface
         return $row;
     }
 
-    public function resolveConfirmation(int $messageId, bool $confirmed, ?int $adminUserId = null): void
-    {
+    public function resolveConfirmation(
+        int $messageId,
+        bool $confirmed,
+        ?int $adminUserId = null,
+        ?array $toolCalls = null
+    ): void {
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('mago_message');
 
@@ -191,6 +195,13 @@ class Repository implements ConversationRepositoryInterface
             );
         }
 
-        $connection->update($table, ['pending_confirmation' => 0], $where);
+        // The answered row is what a reloaded conversation rebuilds its result card from, so the
+        // outcome is written back onto the calls it already holds rather than only onto the reply.
+        $values = ['pending_confirmation' => 0];
+        if ($toolCalls !== null) {
+            $values['tool_calls'] = $this->json->serialize($toolCalls);
+        }
+
+        $connection->update($table, $values, $where);
     }
 }

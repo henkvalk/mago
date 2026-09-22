@@ -1,0 +1,57 @@
+{
+  "mappings": [
+    {
+      "name": "Page context - simple acknowledgement",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Page Context Ack Check"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-context-ack.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "Page context - merge check turn 2, summary after diagnose ran",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Page Context Merge Check"},
+          {"contains": "\"role\":\"tool\""}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-context-merge-summary.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 10, "totalDuration": 100}
+      }
+    },
+    {
+      "name": "Page context - merge check turn 1, ask to diagnose",
+      "priority": 2,
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/chat/completions",
+        "bodyPatterns": [
+          {"contains": "E2E Page Context Merge Check"},
+          {"doesNotMatch": ".*\"role\":\"tool\".*"}
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": "text/event-stream"},
+        "bodyFileName": "page-context-merge-tool-call.sse",
+        "chunkedDribbleDelay": {"numberOfChunks": 15, "totalDuration": 150}
+      }
+    }
+  ]
+}

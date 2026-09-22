@@ -97,5 +97,10 @@ interface ConversationRepositoryInterface
      * @param int|null $adminUserId when given, only resolves messages owned by this admin user
      * @return void
      */
-    public function resolveConfirmation(int $messageId, bool $confirmed, ?int $adminUserId = null): void;
+    public function resolveConfirmation(
+        int $messageId,
+        bool $confirmed,
+        ?int $adminUserId = null,
+        ?array $toolCalls = null
+    ): void;
 }

@@ -53,7 +53,12 @@ class Reject extends Action implements HttpPostActionInterface
             }
 
             $message = $this->conversationRepository->getMessageForUser($messageId, $adminUserId);
-            $this->conversationRepository->resolveConfirmation($messageId, false, $adminUserId);
+            $this->conversationRepository->resolveConfirmation(
+                $messageId,
+                false,
+                $adminUserId,
+                $this->asSkipped($message['tool_calls'] ?? null)
+            );
 
             $conversationId = (int)$message['conversation_id'];
 
@@ -68,5 +73,36 @@ class Reject extends Action implements HttpPostActionInterface
             $this->errorLogger->addLog('Reject Controller', $e->getMessage());
             return $result->setData(['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * The rejected calls marked as never run, for the stored row.
+     *
+     * A reloaded conversation has to be able to tell "was asked and declined" from "was asked and
+     * is still waiting", and the row itself is all it has to go on.
+     *
+     * @param string|array<int, array<string, mixed>>|null $toolCalls
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function asSkipped(string|array|null $toolCalls): ?array
+    {
+        if (is_string($toolCalls)) {
+            try {
+                $toolCalls = $this->json->unserialize($toolCalls);
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+        if (!is_array($toolCalls)) {
+            return null;
+        }
+
+        foreach ($toolCalls as $index => $toolCall) {
+            if (is_array($toolCall)) {
+                $toolCalls[$index]['status'] = 'skipped';
+            }
+        }
+
+        return $toolCalls;
     }
 }

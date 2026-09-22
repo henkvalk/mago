@@ -6,11 +6,53 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Mago\Model\Config;
 
+use Magento\Config\Model\ResourceModel\Config as ConfigData;
+use Magento\Config\Model\ResourceModel\Config\Data\CollectionFactory as ConfigDataCollectionFactory;
+use Magento\Framework\App\Config\ScopeCodeResolver;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\ProductMetadataInterface;
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\Component\ComponentRegistrarInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\Filesystem\Driver\File as FileDriver;
+use Magento\Framework\Serialize\Serializer\Json;
+use Magento\Framework\Stdlib\DateTime\DateTime;
+use Magento\Store\Model\StoreManagerInterface;
 use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepositoryInterface;
 
 class Repository extends System\BaseRepository implements ConfigRepositoryInterface
 {
+    public function __construct(
+        StoreManagerInterface $storeManager,
+        ScopeConfigInterface $scopeConfig,
+        ConfigDataCollectionFactory $configDataCollectionFactory,
+        ConfigData $config,
+        Json $json,
+        ProductMetadataInterface $metadata,
+        EncryptorInterface $encryptor,
+        ResourceConnection $resourceConnection,
+        ScopeCodeResolver $scopeCodeResolver,
+        DateTime $dateTime,
+        ComponentRegistrarInterface $componentRegistrar,
+        FileDriver $fileDriver,
+        private readonly SystemPromptBuilder $systemPromptBuilder
+    ) {
+        parent::__construct(
+            $storeManager,
+            $scopeConfig,
+            $configDataCollectionFactory,
+            $config,
+            $json,
+            $metadata,
+            $encryptor,
+            $resourceConnection,
+            $scopeCodeResolver,
+            $dateTime,
+            $componentRegistrar,
+            $fileDriver
+        );
+    }
+
     public function getExtensionVersion(): string
     {
         return 'v' . ($this->getComposerData()['version'] ?? '0.0.0');
@@ -66,27 +108,7 @@ class Repository extends System\BaseRepository implements ConfigRepositoryInterf
     public function getSystemPrompt(): string
     {
         $custom = $this->getStoreValue(self::XML_PATH_SYSTEM_PROMPT);
-        $base = 'Today is ' . date('Y-m-d') . '. '
-            . 'You are a Magento store assistant with tools to take direct action. '
-            . 'IMPORTANT: Always USE your available tools to fulfill requests. Never tell the user to do something manually '
-            . 'when you have a tool that can do it. '
-            . 'NEVER ask the user for confirmation before using a tool. Just call the tool directly. '
-            . 'Write actions are automatically intercepted by the system and shown to the user for confirmation '
-            . 'before execution — you do not need to handle this yourself. '
-            . 'If you need information from the user (like an email address, a value, or which website or store view '
-            . 'a change applies to), ask for it; asking for missing input is not asking for confirmation. '
-            . 'But once you have all the information, call the tool immediately without asking "shall I proceed?". '
-            . 'You ONLY help with Magento-related topics: store management, products, orders, customers, '
-            . 'configuration, extensions, and troubleshooting. '
-            . 'If a question is not related to Magento or e-commerce store management, politely decline. '
-            . 'Be concise and actionable.';
-
-        $language = $this->getLanguage();
-        if ($language === 'auto') {
-            $base .= ' Respond in the same language as the user.';
-        } else {
-            $base .= ' IMPORTANT: You MUST always respond in ' . $language . ', regardless of what language the user writes in.';
-        }
+        $base = $this->systemPromptBuilder->build($this->getLanguage(), date('Y-m-d'));
 
         return $custom ? $base . "\n\n" . $custom : $base;
     }

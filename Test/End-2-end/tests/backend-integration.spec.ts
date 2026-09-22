@@ -5,6 +5,7 @@
 import {expect, test} from '@playwright/test';
 import ChatPanel from 'Pages/backend/ChatPanel';
 import MagentoApi from 'Services/MagentoApi';
+import {PROVIDER_ROUND_TRIP_TIMEOUT} from 'Config/timeouts';
 
 const chatPanel = new ChatPanel();
 const magentoApi = new MagentoApi();
@@ -32,9 +33,9 @@ test.describe('Backend integration', () => {
     await chatPanel.openOnDashboard(page);
     await chatPanel.ask(page, 'Please run the E2E WireMock check and create the CMS page for it.');
 
-    await expect(chatPanel.toolTags(page)).toHaveText([/cms_data/]);
-    await expect(chatPanel.confirmButton(page)).toBeVisible();
-    await expect(chatPanel.lastAssistantMessage(page)).toContainText(IDENTIFIER);
+    await expect(chatPanel.toolTags(page)).toHaveText([/cms_data/], {timeout: PROVIDER_ROUND_TRIP_TIMEOUT});
+    await expect(chatPanel.confirmButton(page)).toBeVisible({timeout: PROVIDER_ROUND_TRIP_TIMEOUT});
+    await expect(chatPanel.lastAssistantMessage(page)).toContainText(IDENTIFIER, {timeout: PROVIDER_ROUND_TRIP_TIMEOUT});
 
     expect(
       await magentoApi.findCmsPage(request, IDENTIFIER),
@@ -43,7 +44,10 @@ test.describe('Backend integration', () => {
 
     await chatPanel.confirmButton(page).click();
 
-    await expect(chatPanel.lastAssistantMessage(page)).toContainText('is live at /' + IDENTIFIER);
+    await expect(chatPanel.lastAssistantMessage(page)).toContainText(
+      'is live at /' + IDENTIFIER,
+      {timeout: PROVIDER_ROUND_TRIP_TIMEOUT}
+    );
 
     const created = await magentoApi.findCmsPage(request, IDENTIFIER);
 
@@ -61,10 +65,13 @@ test.describe('Backend integration', () => {
     await chatPanel.openOnDashboard(page);
     await chatPanel.ask(page, 'Please run the E2E WireMock check and create the CMS page for it.');
 
-    await expect(chatPanel.rejectButton(page)).toBeVisible();
+    await expect(chatPanel.rejectButton(page)).toBeVisible({timeout: PROVIDER_ROUND_TRIP_TIMEOUT});
     await chatPanel.rejectButton(page).click();
 
-    await expect(chatPanel.lastAssistantMessage(page)).toContainText('Action rejected');
+    await expect(chatPanel.lastAssistantMessage(page)).toContainText(
+      'Action rejected',
+      {timeout: PROVIDER_ROUND_TRIP_TIMEOUT}
+    );
     expect(await magentoApi.findCmsPage(request, IDENTIFIER)).toBeNull();
   });
 });

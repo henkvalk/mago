@@ -6,7 +6,7 @@
         <field id="ai_service" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
             <label>AI Service</label>
             <source_model>MageOS\AiBase\Model\Config\Source\ConfiguredServiceWithAutomatic</source_model>
-            <comment><![CDATA[Which configured AI service the assistant runs on. Providers, API keys, models and endpoints are managed under <em>Stores > Configuration > Mage-OS > AI Configuration</em>.]]></comment>
+            <comment model="MagoAssistant\Mago\Model\Config\Comment\AiServiceLink"/>
         </field>
         <field id="max_tokens" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
             <label>Max Tokens</label>

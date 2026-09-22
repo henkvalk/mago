@@ -1,0 +1,8 @@
+data: {"id":"chatcmpl-e2e-pageform-describe-2","object":"chat.completion.chunk","created":1754000031,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-2","object":"chat.completion.chunk","created":1754000031,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{"content":"Form described."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-e2e-pageform-describe-2","object":"chat.completion.chunk","created":1754000031,"model":"gemma-3-4b-it-qat","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":1300,"completion_tokens":4,"total_tokens":1304}}
+
+data: [DONE]
+

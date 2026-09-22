@@ -13,10 +13,36 @@ use Magento\Framework\Serialize\Serializer\Json;
 use MagoAssistant\Mago\Api\Config\RepositoryInterface as ConfigRepository;
 use MagoAssistant\Mago\Service\Command\CommandRegistry;
 use MagoAssistant\Mago\Service\Command\CommandRunner;
+use MagoAssistant\Mago\Service\Form\FormPolicy;
 use MagoAssistant\Mago\Service\Tool\ToolRegistry;
 
 class ChatPanel extends Template
 {
+    /**
+     * Maximum number of fields the form bridge includes in a single page snapshot.
+     *
+     * A stock Magento product form registers 204 field components, so the previous 200 truncated
+     * every product page by a handful of fields and dropped whichever happened to register last.
+     * FORM_BYTE_CAP is what actually bounds the payload; this only needs enough headroom that a
+     * normal form is described in full.
+     */
+    public const FORM_FIELD_CAP = 600;
+
+    /**
+     * Maximum character length of a single field's value in a page snapshot.
+     */
+    public const FORM_VALUE_LENGTH_CAP = 500;
+
+    /**
+     * Maximum number of options a single select/multiselect field contributes to a snapshot.
+     */
+    public const FORM_OPTION_CAP = 50;
+
+    /**
+     * Maximum serialized byte size of a page snapshot, kept well under typical proxy POST limits.
+     */
+    public const FORM_BYTE_CAP = 200000;
+
     protected $_template = 'MagoAssistant_Mago::chat/panel.phtml';
 
     public function __construct(
@@ -27,6 +53,7 @@ class ChatPanel extends Template
         private readonly ToolRegistry $toolRegistry,
         private readonly CommandRegistry $commandRegistry,
         private readonly CommandRunner $commandRunner,
+        private readonly FormPolicy $formPolicy,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -54,7 +81,61 @@ class ChatPanel extends Template
             'statusUrl' => $this->getUrl('mago/chat/status'),
             'apiBaseUrl' => $this->getUrl('rest/V1/assistant'),
             'isStreamingEnabled' => $this->configRepository->isStreamingEnabled(),
+            'formFieldCap' => self::FORM_FIELD_CAP,
+            'formValueLengthCap' => self::FORM_VALUE_LENGTH_CAP,
+            'formOptionCap' => self::FORM_OPTION_CAP,
+            'formByteCap' => self::FORM_BYTE_CAP,
+            'formDenyNamespaces' => $this->formPolicy->getDeniedNamespacePatterns(),
+            'formDenyRoutes' => $this->formPolicy->getDeniedRoutePatterns(),
+            'i18n' => $this->getPanelTranslations(),
         ]);
+    }
+
+    /**
+     * Every sentence chat-panel.js shows the administrator, keyed by its English source so the
+     * script reads naturally and a translation pack can supply the rest through the usual
+     * i18n csv files. %1, %2 are the placeholders chat-panel.js substitutes.
+     *
+     * @return array<string,string>
+     */
+    private function getPanelTranslations(): array
+    {
+        $sentences = [
+            'I want to perform the following action:',
+            'I want to perform an action. Allow this?',
+            'Allow this?',
+            'Confirm',
+            'Reject',
+            '%1 field',
+            '%1 fields',
+            'Stage %1 on %2:',
+            'Open %1 and stage %2 there:',
+            'the form on screen',
+            'store view %1',
+            'a new %1',
+            'a new, unsaved %1',
+            '%1 #%2',
+            'You will leave this page.',
+            'Unsaved edits on %1 will be lost.',
+            'Nothing is saved until you click Save on the page.',
+            '...and %1 more field.',
+            '...and %1 more fields.',
+            '(hidden)',
+            'Staged %1 of %2 %3. Not saved yet: click Save on the page to keep %4.',
+            'this change',
+            'these changes',
+            'Could not set: %1.',
+            'Could not stage %1. Nothing was changed.',
+            'That change was meant for %1, but a different form is open now. Nothing was changed. Go back to that page and ask me again.',
+            'Navigated to %1, but its form did not load in time. Nothing was changed. Ask me again now that the page is open.',
+            'Opening %1...',
+            'Waiting for the form on %1...',
+            'Action rejected. No changes were made.',
+            'CMS page',
+            'CMS block',
+        ];
+
+        return array_combine($sentences, array_map(static fn (string $sentence): string => (string)__($sentence), $sentences));
     }
 
     public function getStreamUrl(): string
