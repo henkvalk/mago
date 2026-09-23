@@ -15,18 +15,21 @@ use Magento\Indexer\Model\Processor\MakeSharedIndexValid;
 use MagoAssistant\Mago\Api\Data\IndexerResultInterface;
 use MagoAssistant\Mago\Api\Data\IndexerResultInterfaceFactory;
 use MagoAssistant\Mago\Api\WebApi\IndexerManagementInterface;
+use MagoAssistant\Mago\Logger\ErrorLogger;
 
 class IndexerManagement implements IndexerManagementInterface
 {
     private const RESULT_REBUILT = 'rebuilt';
     private const RESULT_SHARED = 'shared';
     private const RESULT_LOCKED = 'locked';
+    private const RESULT_FAILED = 'failed';
 
     public function __construct(
         private readonly CollectionFactory $indexerCollectionFactory,
         private readonly ConfigInterface $config,
         private readonly MakeSharedIndexValid $makeSharedIndexValid,
-        private readonly IndexerResultInterfaceFactory $indexerResultFactory
+        private readonly IndexerResultInterfaceFactory $indexerResultFactory,
+        private readonly ErrorLogger $errorLogger
     ) {
     }
 
@@ -62,12 +65,19 @@ class IndexerManagement implements IndexerManagementInterface
                 continue;
             }
 
-            $indexer->reindexAll();
-            if ($sharedIndex && $this->makeSharedIndexValid->execute($sharedIndex)) {
-                $rebuiltSharedIndexes[] = $sharedIndex;
+            try {
+                $indexer->reindexAll();
+                if ($sharedIndex && $this->makeSharedIndexValid->execute($sharedIndex)) {
+                    $rebuiltSharedIndexes[] = $sharedIndex;
+                }
+                $result[] = $this->toResult($indexer, self::RESULT_REBUILT);
+            } catch (\Throwable $e) {
+                $this->errorLogger->addLog(
+                    'IndexerManagement::rebuild ' . $indexerId,
+                    $e->getMessage()
+                );
+                $result[] = $this->toResult($indexer, self::RESULT_FAILED);
             }
-
-            $result[] = $this->toResult($indexer, self::RESULT_REBUILT);
         }
 
         return $result;
