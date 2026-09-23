@@ -151,6 +151,12 @@ class IndexerManager implements ActionScopedToolInterface
             return ['error' => 'indexer_id parameter is required for reindex action'];
         }
 
+        $available = $this->indexerCollectionFactory->create()->getAllIds();
+        if (!in_array($indexerId, $available)) {
+            $known = implode(', ', $available);
+            return ['error' => sprintf('Unknown indexer(s): %s. Available: %s', $indexerId, $known)];
+        }
+
         return $this->queue(
             'mago/indexers/reindex',
             ['indexerIds' => [$indexerId]],
