@@ -24,6 +24,15 @@ use PHPUnit\Framework\TestCase;
 
 final class IndexerManagementTest extends TestCase
 {
+    private FakeLogger $logger;
+    private MakeSharedIndexValid&MockObject $makeSharedIndexValid;
+
+    protected function setUp(): void
+    {
+        $this->logger = new FakeLogger();
+        $this->makeSharedIndexValid = $this->createMock(MakeSharedIndexValid::class);
+    }
+
     #[Test]
     public function aFailingIndexerDoesNotStopTheOthers(): void
     {
@@ -31,9 +40,8 @@ final class IndexerManagementTest extends TestCase
         $search->method('reindexAll')->willThrowException(new \RuntimeException('OpenSearch is down'));
         $price = $this->indexer('catalog_product_price');
         $price->expects(self::once())->method('reindexAll');
-        $logger = new FakeLogger();
 
-        $result = $this->management([$search, $price], [], $logger)->reindexAll();
+        $result = $this->management([$search, $price])->reindexAll();
 
         self::assertSame(
             ['catalogsearch_fulltext' => 'failed', 'catalog_product_price' => 'rebuilt'],
@@ -41,7 +49,7 @@ final class IndexerManagementTest extends TestCase
         );
         self::assertSame(
             ['IndexerManagement::rebuild catalogsearch_fulltext: OpenSearch is down'],
-            $logger->getMessages()
+            $this->logger->getMessages()
         );
     }
 
@@ -51,15 +59,9 @@ final class IndexerManagementTest extends TestCase
         $stock = $this->indexer('cataloginventory_stock');
         $price = $this->indexer('catalog_product_price');
         $price->expects(self::once())->method('reindexAll');
-        $makeSharedIndexValid = $this->createMock(MakeSharedIndexValid::class);
-        $makeSharedIndexValid->method('execute')->willThrowException(new \RuntimeException('Deadlock'));
+        $this->makeSharedIndexValid->method('execute')->willThrowException(new \RuntimeException('Deadlock'));
 
-        $result = $this->management(
-            [$stock, $price],
-            ['cataloginventory_stock' => 'inventory'],
-            new FakeLogger(),
-            $makeSharedIndexValid
-        )->reindexAll();
+        $result = $this->management([$stock, $price], ['cataloginventory_stock' => 'inventory'])->reindexAll();
 
         self::assertSame(
             ['cataloginventory_stock' => 'failed', 'catalog_product_price' => 'rebuilt'],
@@ -81,12 +83,8 @@ final class IndexerManagementTest extends TestCase
      * @param IndexerInterface[] $indexers
      * @param array<string, string> $sharedIndexes
      */
-    private function management(
-        array $indexers,
-        array $sharedIndexes,
-        FakeLogger $logger,
-        ?MakeSharedIndexValid $makeSharedIndexValid = null
-    ): IndexerManagement {
+    private function management(array $indexers, array $sharedIndexes = []): IndexerManagement
+    {
         $collectionFactory = $this->createMock(CollectionFactory::class);
         $collectionFactory->method('create')->willReturn($indexers);
         $config = $this->createMock(ConfigInterface::class);
@@ -99,9 +97,9 @@ final class IndexerManagementTest extends TestCase
         return new IndexerManagement(
             $collectionFactory,
             $config,
-            $makeSharedIndexValid ?? $this->createMock(MakeSharedIndexValid::class),
+            $this->makeSharedIndexValid,
             $resultFactory,
-            new ErrorLogger($logger, new Json())
+            new ErrorLogger($this->logger, new Json())
         );
     }
 
