@@ -97,6 +97,20 @@ class Repository implements ConversationRepositoryInterface
             $where['admin_user_id = ?'] = $adminUserId;
         }
 
+        // mago_usage_log.conversation_id is ON DELETE SET NULL, so its debug payloads (the full
+        // prompt, including conversation text) would outlive the deleted conversation and become
+        // unreachable once conversation_id is nulled. Scrub them under the same ownership guard
+        // while the row is still linked; the token counts stay for usage accounting.
+        $usageWhere = ['conversation_id = ?' => $conversationId];
+        if ($adminUserId !== null) {
+            $usageWhere['admin_user_id = ?'] = $adminUserId;
+        }
+        $connection->update(
+            $this->resourceConnection->getTableName('mago_usage_log'),
+            ['request_payload' => null, 'response_payload' => null],
+            $usageWhere
+        );
+
         $connection->delete($table, $where);
     }
 
