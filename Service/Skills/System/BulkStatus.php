@@ -73,7 +73,7 @@ class BulkStatus implements ToolInterface
         foreach ($response['operations_list'] as $operation) {
             $operations[] = [
                 'status' => self::STATUS_LABELS[$operation['status']] ?? 'unknown',
-                'message' => $operation['result_message'],
+                'message' => $operation['result_message'] ?? null,
                 'result' => $this->getResult($operation),
             ];
         }
