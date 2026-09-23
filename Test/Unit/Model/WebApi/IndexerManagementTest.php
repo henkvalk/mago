@@ -92,7 +92,9 @@ final class IndexerManagementTest extends TestCase
             static fn (string $id): array => ['shared_index' => $sharedIndexes[$id] ?? null]
         );
         $resultFactory = $this->createMock(IndexerResultInterfaceFactory::class);
-        $resultFactory->method('create')->willReturnCallback(static fn (): IndexerResult => new IndexerResult());
+        $resultFactory->method('create')->willReturnCallback(
+            static fn (): IndexerResult => new IndexerResult()
+        );
 
         return new IndexerManagement(
             $collectionFactory,
