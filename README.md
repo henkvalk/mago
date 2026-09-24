@@ -204,6 +204,10 @@ See [docs/skills-architecture.md](docs/skills-architecture.md) for the full arch
 - Data & privacy details
 - MCP compatibility roadmap
 
+Working with Claude Code? Copy [.claude/skills/mago-skill](.claude/skills/mago-skill) into your Magento project's
+`.claude/skills/` and ask it to build a skill: it scaffolds the module, classifies every returned field and verifies
+the tool against the registry.
+
 ## Testing
 
 End-to-end tests run with Playwright against Chromium. No test calls a real provider: the

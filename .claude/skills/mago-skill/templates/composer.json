@@ -1,0 +1,20 @@
+{
+    "name": "{{vendor}}/magento2-{{slug}}",
+    "description": "{{description}}",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "license": "MIT",
+    "require": {
+        "php": "~8.3.0||~8.4.0||~8.5.0",
+        "magento/framework": "^103.0",
+        "mago-assistant/mago": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "{{Vendor}}\\{{Module}}\\": ""
+        }
+    }
+}
