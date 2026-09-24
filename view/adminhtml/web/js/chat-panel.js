@@ -55,6 +55,9 @@ define([
     var SS_KEY_OPEN = 'mago_open';
     var SS_KEY_CONV = 'mago_conv';
     var SS_KEY_FULL = 'mago_fullsize';
+    // Query parameter a Mago-rendered admin link carries so the tab it opens in can offer to
+    // pick the conversation up again; sessionStorage does not follow a link into a new tab.
+    var RESUME_PARAM = 'mago_conv';
     var DIRECTIVE_TYPE_FORM_WRITE = 'form_write';
     var DIRECTIVE_TYPE_FORM_NAVIGATE = 'form_navigate';
 
@@ -740,12 +743,28 @@ define([
         return href.replace(/"/g, '%22');
     }
 
+    // Admin links rendered by the assistant carry the live conversation id, so that when the link
+    // opens in another tab, the panel there can offer to continue this conversation. Storefront
+    // and external links have no panel and are left untouched.
+    function withResumeParam(href) {
+        var adminBase = String(config.adminBaseUrl || '');
+        var adminPath = adminBase.replace(/^https?:\/\/[^/]+/i, '');
+        if (!conversationId || href === '#') return href;
+        var isAdmin = (adminBase && href.indexOf(adminBase) === 0)
+            || (adminPath && href.indexOf(adminPath) === 0);
+        if (!isAdmin || href.indexOf(RESUME_PARAM + '=') !== -1) return href;
+        var hashIdx = href.indexOf('#');
+        var hash = hashIdx === -1 ? '' : href.substring(hashIdx);
+        var base = hashIdx === -1 ? href : href.substring(0, hashIdx);
+        return base + (base.indexOf('?') === -1 ? '?' : '&') + RESUME_PARAM + '=' + conversationId + hash;
+    }
+
     // Configure marked.js once if available
     if (window.marked) {
         var markedRenderer = new marked.Renderer();
         markedRenderer.link = function(href, title, text) {
             if (typeof href === 'object' && href !== null) { text = href.text; title = href.title; href = href.href; }
-            href = safeHref(href);
+            href = withResumeParam(safeHref(href));
             var isAdmin = href.indexOf('/admin') !== -1 || href.charAt(0) === '/';
             var target = isAdmin ? '_self' : '_blank';
             var titleAttr = title ? ' title="' + String(title).replace(/"/g, '&quot;') + '"' : '';
@@ -785,7 +804,7 @@ define([
         h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
         h = h.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^ )]+|\/[^ )]+))\)/g, function(m, text, url) {
-            url = safeHref(url);
+            url = withResumeParam(safeHref(url));
             var isAdmin = url.indexOf('/admin') !== -1 || url.charAt(0) === '/';
             var target = isAdmin ? '_self' : '_blank';
             return '<a href="' + url + '" target="' + target + '" rel="noopener">' + text + '</a>';
@@ -795,7 +814,7 @@ define([
             if (before.indexOf('href=') !== -1 || before.indexOf('">') !== -1) return m;
             var isAdmin = url.indexOf('/admin') !== -1;
             var target = isAdmin ? '_self' : '_blank';
-            return '<a href="' + safeHref(url) + '" target="' + target + '" rel="noopener">' + url + '</a>';
+            return '<a href="' + withResumeParam(safeHref(url)) + '" target="' + target + '" rel="noopener">' + url + '</a>';
         });
         h = h.replace(/\n\n/g, '</p><p>');
         h = h.replace(/\n/g, '<br>');
@@ -1466,8 +1485,48 @@ define([
         });
     }
 
-    // Restore state from sessionStorage on page load
+    // Arriving through a link the assistant rendered in another tab: open the panel and let the
+    // admin choose between picking that conversation up here or starting fresh. The parameter is
+    // dropped from the address so a reload or bookmark does not ask again.
+    function offerResume(id) {
+        try {
+            var url = new URL(window.location.href);
+            url.searchParams.delete(RESUME_PARAM);
+            window.history.replaceState(window.history.state, '', url.toString());
+        } catch(e) {}
+
+        clearMsgs();
+        conversationId = null;
+        chat.classList.remove('is-empty');
+        setSubtitle('');
+        var msgEl = addMsg('assistant', '');
+        var card = UI.skillAsk({
+            icon: 'arrowRight',
+            title: 'Continue conversation?',
+            text: 'You opened this page from a Mago chat. Continue that conversation here, or start a new one.',
+            allowLabel: 'Continue',
+            laterLabel: 'New chat',
+            onAllow: function() { loadConversation(id); },
+            onLater: function() {
+                clearMsgs();
+                conversationId = null;
+                showGreeting();
+                saveState();
+            }
+        });
+        msgEl.querySelector('.mago-message-content').appendChild(card);
+        openPanel();
+    }
+
+    var resumeId = null;
     try {
+        resumeId = parseInt(new URLSearchParams(window.location.search).get(RESUME_PARAM), 10) || null;
+    } catch(e) {}
+
+    // Restore state from sessionStorage on page load
+    if (resumeId) {
+        offerResume(resumeId);
+    } else try {
         var wasOpen = sessionStorage.getItem(SS_KEY_OPEN) === '1';
         var savedConv = sessionStorage.getItem(SS_KEY_CONV);
         var wasFullsize = sessionStorage.getItem(SS_KEY_FULL) === '1';

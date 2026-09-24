@@ -69,6 +69,15 @@ class ChatPanel extends Template
         return $this->adminSession->isLoggedIn();
     }
 
+    /**
+     * Admin root (scheme, host and area front name, no route or secret key); the panel uses it to
+     * tell admin links apart from storefront links when it tags them with the conversation id.
+     */
+    private function getAdminBaseUrl(): string
+    {
+        return rtrim($this->_urlBuilder->getBaseUrl(), '/') . '/' . $this->_urlBuilder->getAreaFrontName() . '/';
+    }
+
     public function getJsConfig(): string
     {
         return (string)$this->json->serialize([
@@ -80,6 +89,7 @@ class ChatPanel extends Template
             'rejectUrl' => $this->getUrl('mago/chat/reject'),
             'statusUrl' => $this->getUrl('mago/chat/status'),
             'apiBaseUrl' => $this->getUrl('rest/V1/assistant'),
+            'adminBaseUrl' => $this->getAdminBaseUrl(),
             'isStreamingEnabled' => $this->configRepository->isStreamingEnabled(),
             'formFieldCap' => self::FORM_FIELD_CAP,
             'formValueLengthCap' => self::FORM_VALUE_LENGTH_CAP,
