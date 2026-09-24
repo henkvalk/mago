@@ -223,7 +223,7 @@ define([
         formBridge.whenFormReady(entityType, NAVIGATE_INTENT_FORM_TIMEOUT_MS, function (found) {
             if (!found) {
                 hideNavigateStatus();
-                addMsg('assistant', renderMd(formatNavigateTimeoutMessage(intent.target)));
+                addMsg('assistant', renderPanelMd(formatNavigateTimeoutMessage(intent.target)));
                 return;
             }
 
@@ -252,7 +252,7 @@ define([
         if (!result) return;
         var text = formatApplyOutcomeMessage(result);
         if (!text) return;
-        addMsg('assistant', renderMd(text));
+        addMsg('assistant', renderPanelMd(text));
     }
 
     function saveState() {
@@ -665,6 +665,15 @@ define([
         .then(function(r) { return r.json(); })
         .then(function(data) {
             loading.style.display = 'none';
+            // The saved conversation is gone or owned by another admin (e.g. after logging in as a
+            // different user in the same tab); drop the dead id and start fresh, or it fails here on
+            // every page load.
+            if (data && data.error) {
+                conversationId = null;
+                saveState();
+                showGreeting();
+                return;
+            }
             var loaded = data.messages || [];
             if (!loaded.length) {
                 showGreeting();
@@ -774,7 +783,18 @@ define([
         if (!t) return '';
         // Model output is attacker-influenceable (tool results can carry injected instructions), so
         // raw HTML must never reach innerHTML: escape first, then let marked render markdown only.
-        var safe = esc(t);
+        return renderEscapedMd(esc(t));
+    }
+
+    // For sentences the panel builds itself (chat/confirm-text.js). Every value in them that came
+    // from the store or the model is already escaped with text.escapeForMarkdown and wrapped in a
+    // <code> the panel wrote, so escaping again would show that <code> and every entity as text.
+    function renderPanelMd(t) {
+        if (!t) return '';
+        return renderEscapedMd(t);
+    }
+
+    function renderEscapedMd(safe) {
         if (window.marked) {
             return marked.parse(safe);
         }
@@ -1175,7 +1195,7 @@ define([
            both the description and the parameter table, which would otherwise show the raw
            directive JSON. Every other tool keeps the generic card. */
         var formWriteMessage = isFormWrite(first)
-            ? {html: renderMd(formatConfirmMessage(tools))}
+            ? {html: renderPanelMd(formatConfirmMessage(tools))}
             : null;
         var hooks = {actions: 'mago-confirm-actions', allow: 'mago-btn--confirm', confirm: 'mago-btn--confirm', later: 'mago-btn--reject', cancel: 'mago-btn--reject'};
         var irreversible = tools.filter(function(t) { return t.irreversible; });
@@ -1223,6 +1243,10 @@ define([
             });
         }
         var actions = card.querySelector('.mago-confirm-actions');
+        // A write carrying a masked personal value (#114) is allowed, but only with that value in plain sight.
+        if (tools.some(function(t) { return t.sensitive; })) {
+            actions.parentNode.insertBefore(UI.callout({tone: 'warn', text: 'This may write personal data (such as an email address or phone number). Check the values before you allow it.'}), actions);
+        }
         msgEl.appendChild(card);
         msgs.scrollTop = msgs.scrollHeight;
 

@@ -176,6 +176,31 @@ final class ChatServiceTest extends TestCase
     }
 
     #[Test]
+    public function confirmationFlagsAWriteCarryingAMaskedPersonalValue(): void
+    {
+        $this->grants = ['cms_data' => 'write'];
+        $service = $this->buildChatService();
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [
+                ['id' => 'call_1', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'Mail mago://email_1']],
+                ['id' => 'call_2', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'About us']],
+            ],
+        ]];
+        $confirm = null;
+        $onChunk = static function (string $type, array $data) use (&$confirm): void {
+            if ($type === 'confirm') {
+                $confirm = $data;
+            }
+        };
+
+        $service->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertTrue($confirm['tools'][0]['sensitive']);
+        self::assertArrayNotHasKey('sensitive', $confirm['tools'][1]);
+    }
+
+    #[Test]
     public function aBrokenImpactLookupStillAsksWithAnEmptyImpactList(): void
     {
         $this->grants = ['order_manager' => 'write'];
@@ -522,6 +547,97 @@ final class ChatServiceTest extends TestCase
         self::assertSame(['staged' => true], $results['call_1']);
     }
 
+    #[Test]
+    public function itSendsTheBrowserTheDirectiveUnfilteredByThePrivacyClassification(): void
+    {
+        $directive = [
+            'type' => 'form_navigate',
+            'target' => ['namespace' => 'product_form', 'entity_id' => '3754', 'store_id' => '', 'is_new' => false],
+            'url' => 'https://shop.test/admin/catalog/product/edit/id/3754/key/abc123/',
+            'changes' => [['path' => 'data.product.description', 'value' => 'Mail jan@example.com for sizes']],
+        ];
+        $service = $this->serviceWithTool($this->pageFormTool([
+            'staged' => true,
+            'entity_id' => '3754',
+            'client_directive' => $directive,
+        ]));
+
+        $events = [];
+        $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'write_fields']]],
+            null,
+            function (string $event, array $data) use (&$events): void {
+                $events[] = [$event, $data];
+            }
+        );
+
+        self::assertContains(['form_apply', $directive], $events);
+    }
+
+    #[Test]
+    public function itStillTokenisesTheEntityIdInTheResultTheModelSees(): void
+    {
+        $service = $this->serviceWithTool($this->pageFormTool([
+            'staged' => true,
+            'entity_id' => '3754',
+            'client_directive' => ['type' => 'form_write', 'target' => ['entity_id' => '3754']],
+        ]));
+
+        $results = $service->executeConfirmedTools(
+            [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'write_fields']]],
+            null,
+            function (string $event, array $data): void {
+            }
+        );
+
+        self::assertSame(['staged' => true, 'entity_id' => 'mago://entity_1'], $results['call_1']);
+    }
+
+    #[Test]
+    public function itKeepsTheDirectiveOutOfTheToolMessageWhenNotStreaming(): void
+    {
+        $this->grants['page_form'] = 'read';
+        $auth = $this->createMock(AuthorizationInterface::class);
+        $auth->method('isAllowed')->willReturn(true);
+        $pageForm = new FakeSkill('page_form', $auth, [
+            'describe_form' => new FakeAction('describe_form', true, [], '', [
+                'staged' => true,
+                'client_directive' => ['type' => 'form_write', 'target' => ['entity_id' => '3754']],
+            ]),
+        ]);
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [['id' => 'call_1', 'name' => 'page_form', 'input' => ['action' => 'describe_form']]],
+        ]];
+
+        $this->buildChatService([$pageForm])->processMessage([$this->userMessage()], null, self::ADMIN_ID);
+
+        self::assertSame('{"staged":true}', $this->lastMessageOfRole($this->requests[1], 'tool')['content']);
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    private function pageFormTool(array $result): FakeTool
+    {
+        return (new FakeTool('page_form', ['write_fields'], []))
+            ->withResult($result)
+            ->withFieldClassification([
+                'client_directive' => [PiiClass::PUBLIC],
+                'staged' => [PiiClass::PUBLIC],
+                'target' => [PiiClass::PUBLIC],
+                'namespace' => [PiiClass::PUBLIC],
+                'store_id' => [PiiClass::PUBLIC],
+                'is_new' => [PiiClass::PUBLIC],
+                'type' => [PiiClass::PUBLIC],
+                'changes' => [PiiClass::PUBLIC],
+                'path' => [PiiClass::PUBLIC],
+                'value' => [PiiClass::PUBLIC],
+                'entity_id' => [PiiClass::TOKENISE, 'entity'],
+                'url' => [PiiClass::TOKENISE, 'url'],
+            ]);
+    }
+
     private function serviceWithTool(FakeTool $tool): ChatService
     {
         return new ChatService(
@@ -589,7 +705,7 @@ final class ChatServiceTest extends TestCase
     }
 
     #[Test]
-    public function itRefusesAConfirmedWriteCarryingASensitiveTokenEvenWhenResolvable(): void
+    public function itRehydratesAConfirmedPersonalValueIntoTheWrite(): void
     {
         $this->grants['cms_data'] = 'write';
         $echo = new class implements \MagoAssistant\Mago\Api\Skill\ActionInterface {
@@ -648,11 +764,10 @@ final class ChatServiceTest extends TestCase
             'input' => ['action' => 'update_page', 'content' => 'Contact: mago://email_1'],
         ]], self::ADMIN_ID);
 
-        // Resolvable or not, a sensitive-class token never rehydrates into a write: this is the
-        // rehydration-oracle defense (prompt injection cannot exfiltrate vaulted PII via writes).
-        self::assertArrayHasKey('error', $results['call_1']);
-        self::assertStringContainsString('masked personal value', (string)$results['call_1']['error']);
-        self::assertNull($echo->received);
+        // #114: a personal value the admin approved on the card (shown there in plain text, with a
+        // warning) is written as itself, not refused and not as its token.
+        self::assertArrayNotHasKey('error', $results['call_1']);
+        self::assertSame('Contact: jan@example.com', $echo->received['content'] ?? null);
     }
 
     #[Test]

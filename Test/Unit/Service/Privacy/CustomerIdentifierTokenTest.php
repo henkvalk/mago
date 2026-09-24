@@ -82,11 +82,12 @@ final class CustomerIdentifierTokenTest extends TestCase
     }
 
     #[Test]
-    public function aMaskedNameCannotBeWrittenBackIntoTheStore(): void
+    public function aMaskedNameWrittenBackIsFlaggedForTheConfirmationWarning(): void
     {
         $vault = new ConversationVault();
         $service = new PrivacyService(new PrivacyFilter($vault, new PiiHeuristic()), $vault, new PiiHeuristic());
 
-        self::assertTrue($service->containsSensitiveToken(['firstname' => 'mago://name_1']));
+        self::assertTrue($service->containsPersonalToken(['firstname' => 'mago://name_1']));
+        self::assertFalse($service->containsSensitiveToken(['firstname' => 'mago://name_1']));
     }
 }

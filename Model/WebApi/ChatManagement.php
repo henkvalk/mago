@@ -157,10 +157,14 @@ class ChatManagement implements ChatManagementInterface
 
             $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId);
             foreach ($results as $toolCallId => $result) {
+                // Store the tool result against its call id (cast: a numeric id arrives as an int key).
                 $this->conversationRepository->addMessage(
                     $conversationId,
                     'tool',
-                    $this->toJson($result)
+                    $this->toJson($result),
+                    null,
+                    false,
+                    (string)$toolCallId
                 );
             }
 

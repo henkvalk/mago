@@ -73,7 +73,9 @@ test.describe('Privacy mode', () => {
     expect(toolBodies.length, 'no tool-result turn ever reached the provider').toBeGreaterThanOrEqual(1);
 
     for (const body of toolBodies) {
-      expect(body, 'the tokenised customer reference is missing from the tool result').toContain('[customer_');
+      /* A token reads mago://customer_1; inside the JSON body its slashes arrive escaped, once
+         or twice depending on how deep the tool result is encoded. */
+      expect(body, 'the tokenised customer reference is missing from the tool result').toMatch(/mago:[\\/]+customer_\d/);
       expect(body, 'the lookup argument did not reach the provider intact').toContain(LOOKUP_TERM);
     }
 

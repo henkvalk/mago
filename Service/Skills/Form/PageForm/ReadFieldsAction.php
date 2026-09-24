@@ -99,9 +99,11 @@ class ReadFieldsAction extends AbstractPageFormReadAction
     }
     public function getFieldClassification(): array
     {
-        // Structure only. A form field's value is whatever the admin has open, and on a customer or
-        // order form that is a name, an address or a phone number, so the value itself never
-        // crosses; the model still learns which fields exist and which were found.
+        // Values cross so the model can work with existing content (issue #114). Customer, address
+        // and order forms never get here: FormPolicy denies them and the snapshot carries no fields.
+        // A public value still passes the PII heuristic in PrivacyFilter::keep(), so an email, IBAN
+        // or phone number on an allowed form is tokenised; a bare name has no signature and is the
+        // documented residual risk.
         return [
             'namespace' => [PiiClass::PUBLIC],
             'found' => [PiiClass::PUBLIC],
@@ -109,8 +111,8 @@ class ReadFieldsAction extends AbstractPageFormReadAction
             'path' => [PiiClass::PUBLIC],
             'label' => [PiiClass::PUBLIC],
             'message' => [PiiClass::PUBLIC],
-            'value' => [PiiClass::STRIP],
-        ];
+            'value' => [PiiClass::PUBLIC],
+        ] + self::NO_FORM_CLASSIFICATION;
     }
 
 }

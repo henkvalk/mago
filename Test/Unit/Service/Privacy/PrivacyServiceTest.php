@@ -57,13 +57,25 @@ class PrivacyServiceTest extends TestCase
     }
 
     #[Test]
-    public function sensitiveTokensAreFlaggedForWritesButIdTokensAreNot(): void
+    public function onlyAdminUrlTokensAreRefusedForWrites(): void
     {
         $service = $this->service(new ConversationVault());
 
-        self::assertTrue($service->containsSensitiveToken(['content' => 'Mail mago://email_1 now']));
         self::assertTrue($service->containsSensitiveToken(['nested' => ['link' => 'See mago://url_2']]));
+        self::assertFalse($service->containsSensitiveToken(['content' => 'Mail mago://email_1 now']));
         self::assertFalse($service->containsSensitiveToken(['comment' => 'About mago://order_1 and mago://customer_3']));
+    }
+
+    #[Test]
+    public function personalTokensAreFlaggedForTheConfirmationWarning(): void
+    {
+        $service = $this->service(new ConversationVault());
+
+        self::assertTrue($service->containsPersonalToken(['content' => 'Mail mago://email_1 now']));
+        self::assertTrue($service->containsPersonalToken(['nested' => ['phone' => 'mago://phone_3']]));
+        self::assertTrue($service->containsPersonalToken(['legacy' => 'Mail [email_1] now']));
+        self::assertFalse($service->containsPersonalToken(['link' => 'See mago://url_2']));
+        self::assertFalse($service->containsPersonalToken(['comment' => 'About mago://order_1']));
     }
 
     #[Test]
@@ -120,6 +132,20 @@ class PrivacyServiceTest extends TestCase
         [$emit2, $carry2] = $service->rehydrateStreamDelta($carry1, '_1 now');
 
         self::assertSame('Mailing ', $emit1);
+        self::assertSame('jan@example.com now', $emit2);
+        self::assertSame('', $carry2);
+    }
+
+    #[Test]
+    public function aTokenSplitRightAfterItsFirstLetterIsStillRehydrated(): void
+    {
+        $service = $this->service(new ConversationVault());
+        $service->scrubMessages([['role' => 'user', 'content' => 'mail jan@example.com']]);
+
+        [$emit1, $carry1] = $service->rehydrateStreamDelta('', 'Mail m');
+        [$emit2, $carry2] = $service->rehydrateStreamDelta($carry1, 'ago://email_1 now');
+
+        self::assertSame('Mail ', $emit1);
         self::assertSame('jan@example.com now', $emit2);
         self::assertSame('', $carry2);
     }

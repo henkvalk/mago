@@ -9,6 +9,7 @@ namespace MagoAssistant\Mago\Service\Skills\Form\PageForm;
 use MagoAssistant\Mago\Api\Skill\ActionInterface;
 use MagoAssistant\Mago\Model\Form\PageContext;
 use MagoAssistant\Mago\Service\Form\PageContextHolder;
+use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
 /**
  * Every page_form action, read or write, reads the same request-scoped PageContext and shares the
@@ -16,6 +17,18 @@ use MagoAssistant\Mago\Service\Form\PageContextHolder;
  */
 abstract class AbstractPageFormAction implements ActionInterface
 {
+    /**
+     * The fields of noFormOpenResult() and deniedFormResult(), which every action can return. Each
+     * action adds these after its own classification, so its own rule for a key wins; left out,
+     * the privacy filter drops them and the model sees an empty result instead of "no form open" or
+     * "this form is denied". The message is a fixed sentence written here, never data from the form.
+     */
+    protected const NO_FORM_CLASSIFICATION = [
+        'form_open' => [PiiClass::PUBLIC],
+        'denied' => [PiiClass::PUBLIC],
+        'message' => [PiiClass::PUBLIC],
+    ];
+
     public function __construct(
         private readonly PageContextHolder $pageContextHolder
     ) {

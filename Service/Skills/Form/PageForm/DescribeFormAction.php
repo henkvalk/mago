@@ -96,7 +96,9 @@ class DescribeFormAction extends AbstractPageFormReadAction
         return [
             'namespace' => [PiiClass::PUBLIC],
             'entity_type' => [PiiClass::PUBLIC],
-            'entity_id' => [PiiClass::TOKENISE, 'entity'],
+            // Public: the system prompt already names the open record ("product #12"), and the
+            // forms that hold personal data (customer, order, admin user) are denied before this runs.
+            'entity_id' => [PiiClass::PUBLIC],
             'is_new_entity' => [PiiClass::PUBLIC],
             'store_id' => [PiiClass::PUBLIC],
             'total_fields' => [PiiClass::PUBLIC],
@@ -105,7 +107,7 @@ class DescribeFormAction extends AbstractPageFormReadAction
             'path' => [PiiClass::PUBLIC],
             'label' => [PiiClass::PUBLIC],
             'type' => [PiiClass::PUBLIC],
-        ];
+        ] + self::NO_FORM_CLASSIFICATION;
     }
 
 }

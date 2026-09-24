@@ -91,6 +91,13 @@ class UpdatePageAction implements ActionInterface
         }
 
         $body = ['page' => ['id' => $pageId]];
+        // Send the existing URL key back, or Magento regenerates the identifier from the title on
+        // save and the old storefront URL 404s with no redirect. This action only edits content and
+        // title; it never renames a page.
+        $currentIdentifier = (string)($page['identifier'] ?? '');
+        if ($currentIdentifier !== '') {
+            $body['page']['identifier'] = $currentIdentifier;
+        }
         if (!empty($params['content'])) {
             $body['page']['content'] = $params['content'];
         }

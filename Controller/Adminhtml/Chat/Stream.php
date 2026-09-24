@@ -81,9 +81,7 @@ class Stream extends Action implements HttpPostActionInterface
             // irreversibly by class. The page context is still summarised so the entry stays readable.
             if ($this->configRepository->isDebugEnabled()) {
                 $this->debugLogger->addLog('Stream Request', [
-                    'raw_body' => $this->privacyService->maskText(
-                        (string)$this->json->serialize($this->redactedPostData($postData))
-                    ),
+                    'masked_request' => $this->maskedPostData($this->redactedPostData($postData)),
                 ]);
             }
 
@@ -340,6 +338,24 @@ class Stream extends Action implements HttpPostActionInterface
         }
 
         $postData['page_context'] = $this->summarizePageContext($postData['page_context']);
+
+        return $postData;
+    }
+
+    /**
+     * Mask every string in the request, leaving its structure as is. Masking the serialized body
+     * instead would log it as one escaped JSON string, which nobody reading the log can scan.
+     *
+     * @param array<array-key, mixed> $postData
+     * @return array<array-key, mixed>
+     */
+    private function maskedPostData(array $postData): array
+    {
+        array_walk_recursive($postData, function (mixed &$value): void {
+            if (is_string($value)) {
+                $value = $this->privacyService->maskText($value);
+            }
+        });
 
         return $postData;
     }

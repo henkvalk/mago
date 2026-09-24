@@ -6,12 +6,12 @@ declare(strict_types=1);
 
 namespace MagoAssistant\Mago\Service\Skills\Sales\OrderManager;
 
-use MagoAssistant\Mago\Api\Skill\ActionInterface;
+use MagoAssistant\Mago\Api\Skill\IrreversibleActionInterface;
 use MagoAssistant\Mago\Service\Api\InternalApiClient;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 use MagoAssistant\Mago\Service\Url\SecureAdminUrl;
 
-class CreateInvoiceAction implements ActionInterface
+class CreateInvoiceAction implements IrreversibleActionInterface
 {
     public function __construct(
         private readonly InternalApiClient $apiClient,
@@ -79,6 +79,19 @@ class CreateInvoiceAction implements ActionInterface
     {
         return 'Creating an invoice with capture=true will trigger online payment capture if the payment method supports it. '
             . 'For offline payment methods (bank transfer, check/MO), capture is always offline.';
+    }
+
+    public function getImpacts(array $params, int $adminUserId): array
+    {
+        $orderNumber = trim((string)($params['order_number'] ?? ''));
+        $orderLabel = $orderNumber !== '' ? ' for order #' . $orderNumber : '';
+
+        $impacts = ['Creates an invoice' . $orderLabel . '; an invoice cannot be deleted, only reversed with a credit memo.'];
+        if ((bool)($params['capture'] ?? true)) {
+            $impacts[] = 'Captures payment online where the payment method supports it — the customer is charged now.';
+        }
+
+        return $impacts;
     }
 
     public function execute(array $params, int $adminUserId): array

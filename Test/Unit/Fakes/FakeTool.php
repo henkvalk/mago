@@ -20,6 +20,9 @@ final class FakeTool implements ToolInterface
     /** @var array<string, mixed> */
     private array $result = [];
 
+    /** @var array<string,array{0:string,1?:string}> */
+    private array $fieldClassification = [PiiClass::ANY => [PiiClass::PUBLIC]];
+
     /**
      * @param string[] $actions
      * @param string[] $readActions
@@ -38,6 +41,16 @@ final class FakeTool implements ToolInterface
     public function withResult(array $result): self
     {
         $this->result = $result;
+
+        return $this;
+    }
+
+    /**
+     * @param array<string,array{0:string,1?:string}> $fieldClassification
+     */
+    public function withFieldClassification(array $fieldClassification): self
+    {
+        $this->fieldClassification = $fieldClassification;
 
         return $this;
     }
@@ -93,8 +106,8 @@ final class FakeTool implements ToolInterface
 
     public function getFieldClassification(string $action = ''): array
     {
-        // Wildcard-public so non-privacy tests see the fake's output unfiltered.
-        return [PiiClass::ANY => [PiiClass::PUBLIC]];
+        // Wildcard-public by default so non-privacy tests see the fake's output unfiltered.
+        return $this->fieldClassification;
     }
 
     public function getMagentoAcl(array $input = []): string

@@ -43,6 +43,8 @@ class ChatPanel extends Template
      */
     public const FORM_BYTE_CAP = 200000;
 
+    private const ACL_ASSISTANT = 'MagoAssistant_Mago::assistant_read';
+
     protected $_template = 'MagoAssistant_Mago::chat/panel.phtml';
 
     public function __construct(
@@ -67,6 +69,15 @@ class ChatPanel extends Template
 
         // Only show when admin user is logged in
         return $this->adminSession->isLoggedIn();
+    }
+
+    /**
+     * The chat controllers require assistant_read; without it the panel shows a notice rather
+     * than wiring a chat whose every call would 403 (#159).
+     */
+    public function canUseAssistant(): bool
+    {
+        return $this->_authorization->isAllowed(self::ACL_ASSISTANT);
     }
 
     public function getJsConfig(): string
