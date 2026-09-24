@@ -9,14 +9,17 @@ namespace MagoAssistant\Mago\Service\Skills\Configuration;
 use Magento\Framework\App\Cache\Frontend\Pool as CacheFrontendPool;
 use Magento\Framework\App\Cache\TypeListInterface;
 use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
-class CacheManager implements ActionScopedToolInterface
+class CacheManager implements ActionScopedToolInterface, ValidatingToolInterface
 {
+    use ValidatesIdArgument;
+
     private const ACTION_DESCRIPTIONS = [
         'status' => 'list all cache types and their status',
         'flush' => 'flush all caches',
-        'flush_type' => 'flush a specific cache type by id, e.g. "config", "full_page", "layout", "block_html"',
+        'flush_type' => 'flush a specific cache type by id',
     ];
 
     public function __construct(
@@ -62,10 +65,7 @@ class CacheManager implements ActionScopedToolInterface
             ],
         ];
         if (in_array('flush_type', $actionNames, true)) {
-            $properties['cache_type'] = [
-                'type' => 'string',
-                'description' => 'Cache type ID for flush_type action (e.g. "config", "full_page", "layout", "block_html", "collections", "reflection", "eav", "translate")',
-            ];
+            $properties['cache_type'] = $this->idProperty('Cache type ID for flush_type action', $this->cacheLabels());
         }
 
         return [
@@ -98,6 +98,16 @@ class CacheManager implements ActionScopedToolInterface
         return ($input['action'] ?? '') === 'status';
     }
 
+    public function findRefusal(array $input): ?array
+    {
+        $cacheType = (string)($input['cache_type'] ?? '');
+        if (($input['action'] ?? '') !== 'flush_type' || $cacheType === '') {
+            return null;
+        }
+
+        return $this->refusalForId('cache type', $cacheType, $this->cacheLabels());
+    }
+
     public function getInstructions(): string
     {
         return '';
@@ -125,6 +135,21 @@ class CacheManager implements ActionScopedToolInterface
             'flush_type' => 'Magento_Backend::refresh_cache_type',
             default => 'Magento_Backend::flush_cache_storage',
         };
+    }
+
+    /**
+     * Every cache type's label by ID
+     *
+     * @return array<string,string>
+     */
+    private function cacheLabels(): array
+    {
+        $labels = [];
+        foreach ($this->cacheTypeList->getTypes() as $type) {
+            $labels[(string)$type->getId()] = (string)$type->getCacheType();
+        }
+
+        return $labels;
     }
 
     private function getStatus(): array
@@ -165,9 +190,9 @@ class CacheManager implements ActionScopedToolInterface
             return ['error' => 'cache_type parameter is required for flush_type action'];
         }
 
-        $types = $this->cacheTypeList->getTypes();
-        if (!isset($types[$cacheType])) {
-            return ['error' => 'Unknown cache type: ' . $cacheType . '. Use "status" action to list available types.'];
+        $labels = $this->cacheLabels();
+        if (!isset($labels[$cacheType])) {
+            return $this->refuseUnknownId('cache type', $cacheType, $labels);
         }
 
         $this->cacheTypeList->cleanType($cacheType);

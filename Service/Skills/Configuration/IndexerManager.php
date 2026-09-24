@@ -9,13 +9,16 @@ namespace MagoAssistant\Mago\Service\Skills\Configuration;
 use Magento\Framework\Indexer\IndexerRegistry;
 use Magento\Indexer\Model\Indexer\CollectionFactory;
 use MagoAssistant\Mago\Api\Tool\ActionScopedToolInterface;
+use MagoAssistant\Mago\Api\Tool\ValidatingToolInterface;
 use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
-class IndexerManager implements ActionScopedToolInterface
+class IndexerManager implements ActionScopedToolInterface, ValidatingToolInterface
 {
+    use ValidatesIdArgument;
+
     private const ACTION_DESCRIPTIONS = [
         'status' => 'list all indexers with status',
-        'reindex' => 'reindex a specific indexer by ID, e.g. "catalog_product_price", "catalogsearch_fulltext"',
+        'reindex' => 'reindex a specific indexer by ID',
         'reindex_all' => 'reindex all indexers',
         'set_mode' => 'set indexer mode to "realtime" or "schedule"',
     ];
@@ -63,10 +66,10 @@ class IndexerManager implements ActionScopedToolInterface
             ],
         ];
         if (array_intersect(['reindex', 'set_mode'], $actionNames) !== []) {
-            $properties['indexer_id'] = [
-                'type' => 'string',
-                'description' => 'Indexer ID for reindex/set_mode actions (e.g. "catalog_product_price", "catalogsearch_fulltext", "catalog_category_product")',
-            ];
+            $properties['indexer_id'] = $this->idProperty(
+                'Indexer ID for reindex/set_mode actions',
+                $this->indexerTitles()
+            );
         }
         if (in_array('set_mode', $actionNames, true)) {
             $properties['mode'] = [
@@ -107,6 +110,19 @@ class IndexerManager implements ActionScopedToolInterface
         return ($input['action'] ?? '') === 'status';
     }
 
+    public function findRefusal(array $input): ?array
+    {
+        if (!in_array($input['action'] ?? '', ['reindex', 'set_mode'], true)) {
+            return null;
+        }
+        $indexerId = (string)($input['indexer_id'] ?? '');
+        if ($indexerId === '') {
+            return null;
+        }
+
+        return $this->refusalForId('indexer', $indexerId, $this->indexerTitles());
+    }
+
     public function getInstructions(): string
     {
         return '';
@@ -140,6 +156,21 @@ class IndexerManager implements ActionScopedToolInterface
         };
     }
 
+    /**
+     * Every registered indexer's title by ID
+     *
+     * @return array<string,string>
+     */
+    private function indexerTitles(): array
+    {
+        $titles = [];
+        foreach ($this->indexerCollectionFactory->create()->getItems() as $indexer) {
+            $titles[(string)$indexer->getId()] = (string)$indexer->getTitle();
+        }
+
+        return $titles;
+    }
+
     private function getStatus(): array
     {
         $collection = $this->indexerCollectionFactory->create();
@@ -165,7 +196,7 @@ class IndexerManager implements ActionScopedToolInterface
         try {
             $indexer = $this->indexerRegistry->get($indexerId);
         } catch (\Exception $e) {
-            return ['error' => 'Unknown indexer: ' . $indexerId . '. Use "status" action to list available indexers.'];
+            return $this->refuseUnknownId('indexer', $indexerId, $this->indexerTitles());
         }
 
         $indexer->reindexAll();
@@ -214,7 +245,7 @@ class IndexerManager implements ActionScopedToolInterface
         try {
             $indexer = $this->indexerRegistry->get($indexerId);
         } catch (\Exception $e) {
-            return ['error' => 'Unknown indexer: ' . $indexerId];
+            return $this->refuseUnknownId('indexer', $indexerId, $this->indexerTitles());
         }
 
         $indexer->setScheduled($mode === 'schedule');
