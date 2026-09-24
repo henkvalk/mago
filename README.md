@@ -122,6 +122,19 @@ Examples:
 
 These calls verify the TLS certificate by default. If the internal URL points at a host whose certificate cannot match (loopback addresses, container hostnames, self-signed certificates), set `Verify TLS Certificate` to No. Keep it enabled in production.
 
+### Higgsfield media generation (optional)
+
+The `product_media` skill generates product images and videos from a product's main image through
+[Higgsfield](https://higgsfield.ai). Add an API key ID and secret under `Stores > Configuration >
+Mago Assistant > General > Higgsfield Media Generation`; the secret is stored encrypted. Without a key
+the skill refuses every generation.
+
+- Each generation spends Higgsfield credits; the confirmation shows the estimated cost first.
+- The main product image is uploaded to Higgsfield as input, so its media URL does not need to be public.
+- Results are fetched with `check_status` and saved under `pub/media/mago/higgsfield/<request id>/`,
+  because Higgsfield keeps outputs for about seven days.
+- `attach_image` adds a generated image to the product gallery, hidden and without roles unless asked.
+
 ## Built-in Skills
 
 | Skill area | Tools | Access |
@@ -129,6 +142,7 @@ These calls verify the TLS certificate by default. If the internal URL points at
 | Store Analytics | `sales_data`, `product_data`, `customer_data` | Read |
 | Store Configuration | `config_reader`, `config_writer`, `cache_manager`, `indexer_manager` | Read / Write |
 | Content Management | `cms_data`, `content_generator` | Read / Write |
+| Product Media | `product_media` (Higgsfield image and video generation) | Read / Write |
 | Navigation | `admin_navigator` | Read |
 | Documentation | `docs_search` | Read |
 | Form Access | `page_form` | Read / Stage (never saves) |

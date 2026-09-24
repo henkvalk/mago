@@ -68,6 +68,7 @@
                 <item name="url_rewrite_manager" xsi:type="object">MagoAssistant\Mago\Service\Skills\Seo\UrlRewriteManager</item>
                 <item name="review_manager" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ReviewManager</item>
                 <item name="product_management" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductManagement</item>
+                <item name="product_media" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia</item>
                 <item name="order_manager" xsi:type="object">MagoAssistant\Mago\Service\Skills\Sales\OrderManager</item>
                 <item name="cron_status" xsi:type="object">MagoAssistant\Mago\Service\Skills\System\CronStatus</item>
                 <item name="product_debug" xsi:type="object">MagoAssistant\Mago\Service\Skills\Debug\ProductDebug</item>
@@ -343,6 +344,30 @@
                 <item name="get_attribute_options" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductManagement\GetAttributeOptionsAction</item>
                 <item name="create_product" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductManagement\CreateProductAction</item>
                 <item name="add_configurable_variants" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductManagement\AddConfigurableVariantsAction</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Skill Actions: ProductMedia -->
+    <type name="MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia">
+        <arguments>
+            <argument name="actions" xsi:type="array">
+                <item name="generate_image" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\GenerateImageAction</item>
+                <item name="generate_video" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\GenerateVideoAction</item>
+                <item name="check_status" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\CheckStatusAction</item>
+                <item name="attach_image" xsi:type="object">MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\AttachImageAction</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldClient">
+        <arguments>
+            <argument name="httpClient" xsi:type="object">GuzzleHttp\Client</argument>
+        </arguments>
+    </type>
+    <type name="Magento\Config\Model\Config\TypePool">
+        <arguments>
+            <argument name="sensitive" xsi:type="array">
+                <item name="mago/higgsfield/api_key_secret" xsi:type="string">1</item>
             </argument>
         </arguments>
     </type>
