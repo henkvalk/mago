@@ -125,11 +125,12 @@ These calls verify the TLS certificate by default. If the internal URL points at
 ### Higgsfield media generation (optional)
 
 The `product_media` skill generates product images and videos from a product's main image through
-[Higgsfield](https://higgsfield.ai). Add an API key ID and secret under `Stores > Configuration >
-Mago Assistant > General > Higgsfield Media Generation`; the secret is stored encrypted. Without a key
-the skill refuses every generation.
+[Higgsfield](https://higgsfield.ai): images with Nano Banana 2, videos with Seedance 2.0 or Kling 3.0.
+Connect a Higgsfield account under `Stores > Configuration > Mago Assistant > General > Higgsfield
+Media Generation`. The shop registers itself as OAuth client of the Higgsfield MCP server and stores
+the tokens encrypted; without a connection the skill refuses every generation.
 
-- Each generation spends Higgsfield credits; the confirmation shows the estimated cost first.
+- Each generation spends Higgsfield credits; the confirmation shows the preflighted cost first.
 - The main product image is uploaded to Higgsfield as input, so its media URL does not need to be public.
 - Results are fetched with `check_status` and saved under `pub/media/mago/higgsfield/<request id>/`,
   because Higgsfield keeps outputs for about seven days.

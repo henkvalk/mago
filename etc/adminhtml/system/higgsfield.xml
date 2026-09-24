@@ -2,14 +2,11 @@
 <include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
     <group id="higgsfield" translate="label comment" sortOrder="35" showInDefault="1" showInWebsite="0" showInStore="0">
         <label>Higgsfield Media Generation</label>
-        <comment><![CDATA[Lets the assistant generate product images and videos from a product's main image with the <a href="https://higgsfield.ai" target="_blank" rel="noopener">Higgsfield</a> API. Every generation spends Higgsfield credits and asks for confirmation first. Create an API key in the Higgsfield console.]]></comment>
+        <comment><![CDATA[Lets the assistant generate product images and videos with <a href="https://higgsfield.ai" target="_blank" rel="noopener">Higgsfield</a>. Connect a Higgsfield account; every generation spends credits from that account and asks for confirmation first.]]></comment>
         <attribute type="expanded">1</attribute>
-        <field id="api_key_id" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
-            <label>API Key ID</label>
-        </field>
-        <field id="api_key_secret" translate="label" type="obscure" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
-            <label>API Key Secret</label>
-            <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+        <field id="connection" translate="label" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>Connection</label>
+            <frontend_model>MagoAssistant\Mago\Block\Adminhtml\System\Config\HiggsfieldConnection</frontend_model>
         </field>
     </group>
 </include>

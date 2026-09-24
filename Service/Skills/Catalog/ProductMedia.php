@@ -17,8 +17,9 @@ class ProductMedia extends AbstractSkill
 
     protected function getBaseDescription(): string
     {
-        return 'Generate new images or short videos of an existing product from its main image with Higgsfield '
-            . '(needs a Higgsfield API key in the configuration). Generation runs in the background: start it, '
+        return 'Generate new images (Nano Banana 2) or short videos (Seedance 2.0 or Kling 3.0) of an existing '
+            . 'product from its main image with Higgsfield (needs a connected Higgsfield account in the '
+            . 'configuration). Generation runs in the background: start it, '
             . 'then check the request until it is completed.';
     }
 

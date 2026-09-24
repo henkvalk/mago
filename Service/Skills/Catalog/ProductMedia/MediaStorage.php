@@ -27,7 +27,7 @@ class MediaStorage
     public function __construct(
         private readonly Filesystem $filesystem,
         private readonly StoreManagerInterface $storeManager,
-        private readonly HiggsfieldClient $client
+        private readonly HiggsfieldMedia $client
     ) {
     }
 

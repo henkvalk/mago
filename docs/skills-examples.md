@@ -117,8 +117,9 @@ Update the "about us" page content
 ```
 
 ### product_media (requires confirmation for generation and attach)
-Generate product images and videos from the main product image with Higgsfield. Needs an API key
-under Mago Assistant > General > Higgsfield Media Generation. Generation spends credits.
+Generate product images and videos from the main product image with Higgsfield (Nano Banana 2 for
+images, Seedance 2.0 or Kling 3.0 for video). Needs a connected Higgsfield account under Mago Assistant >
+General > Higgsfield Media Generation. Generation spends credits.
 
 ```
 Generate a lifestyle image of SKU ABC-123 on a kitchen table, square

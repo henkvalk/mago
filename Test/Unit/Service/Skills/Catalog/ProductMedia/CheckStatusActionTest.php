@@ -7,7 +7,7 @@ declare(strict_types=1);
 namespace MagoAssistant\Mago\Test\Unit\Service\Skills\Catalog\ProductMedia;
 
 use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\CheckStatusAction;
-use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldClient;
+use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldMedia;
 use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\MediaStorage;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -18,9 +18,9 @@ class CheckStatusActionTest extends TestCase
     private const ID = 'd7e6c0f3-6699-4f6c-bb45-2ad7fd9158ff';
 
     /**
-     * @var HiggsfieldClient&Stub
+     * @var HiggsfieldMedia&Stub
      */
-    private HiggsfieldClient $client;
+    private HiggsfieldMedia $client;
 
     /**
      * @var MediaStorage&Stub
@@ -29,7 +29,7 @@ class CheckStatusActionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->client = $this->createStub(HiggsfieldClient::class);
+        $this->client = $this->createStub(HiggsfieldMedia::class);
         $this->storage = $this->configure($this->createStub(MediaStorage::class));
     }
 
@@ -54,7 +54,7 @@ class CheckStatusActionTest extends TestCase
     #[Test]
     public function itRejectsAnythingButARequestId(): void
     {
-        $this->client = $this->createMock(HiggsfieldClient::class);
+        $this->client = $this->createMock(HiggsfieldMedia::class);
         $this->client->expects(self::never())->method('status');
 
         $result = $this->action()->execute(['request_id' => '../../etc'], 1);
@@ -65,7 +65,7 @@ class CheckStatusActionTest extends TestCase
     #[Test]
     public function itReportsAPendingRequest(): void
     {
-        $this->client->method('status')->willReturn(['status' => 'in_progress', 'request_id' => self::ID]);
+        $this->client->method('status')->willReturn(['status' => 'in_progress', 'type' => 'image', 'urls' => []]);
 
         $result = $this->action()->execute(['request_id' => strtoupper(self::ID)], 1);
 
@@ -73,14 +73,14 @@ class CheckStatusActionTest extends TestCase
     }
 
     #[Test]
-    public function itReportsAFailureAsFree(): void
+    public function itReportsAFailure(): void
     {
-        $this->client->method('status')->willReturn(['status' => 'failed', 'error' => 'Generation failed']);
+        $this->client->method('status')->willReturn(['status' => 'nsfw', 'type' => 'image', 'urls' => []]);
 
         $result = $this->action()->execute(['request_id' => self::ID], 1);
 
-        self::assertSame('failed', $result['status']);
-        self::assertStringContainsString('No credits were charged', $result['message']);
+        self::assertSame('nsfw', $result['status']);
+        self::assertStringContainsString('content policy', $result['message']);
     }
 
     #[Test]
@@ -88,7 +88,8 @@ class CheckStatusActionTest extends TestCase
     {
         $this->client->method('status')->willReturn([
             'status' => 'completed',
-            'video' => ['url' => 'https://cdn.example.com/out'],
+            'type' => 'video',
+            'urls' => ['https://cdn.example.com/out'],
         ]);
         $this->storage = $this->configure($this->createMock(MediaStorage::class));
         $this->storage->method('files')->willReturn([]);
@@ -110,7 +111,7 @@ class CheckStatusActionTest extends TestCase
     public function itAnswersFromStoredFilesWithoutCallingHiggsfield(): void
     {
         $this->storage->method('files')->willReturn(['mago/higgsfield/' . self::ID . '/1.png']);
-        $this->client = $this->createMock(HiggsfieldClient::class);
+        $this->client = $this->createMock(HiggsfieldMedia::class);
         $this->client->expects(self::never())->method('status');
 
         $result = $this->action()->execute(['request_id' => self::ID], 1);

@@ -9,7 +9,7 @@ namespace MagoAssistant\Mago\Test\Unit\Service\Skills\Catalog\ProductMedia;
 use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\AbstractGenerateAction;
 use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\GenerateImageAction;
 use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\GenerateVideoAction;
-use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldClient;
+use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldMedia;
 use MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\ProductImageSource;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -28,9 +28,9 @@ class GenerateActionTest extends TestCase
     ];
 
     /**
-     * @var HiggsfieldClient&Stub
+     * @var HiggsfieldMedia&Stub
      */
-    private HiggsfieldClient $client;
+    private HiggsfieldMedia $client;
 
     /**
      * @var ProductImageSource&Stub
@@ -39,22 +39,22 @@ class GenerateActionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->client = $this->createStub(HiggsfieldClient::class);
-        $this->client->method('isConfigured')->willReturn(true);
+        $this->client = $this->createStub(HiggsfieldMedia::class);
+        $this->client->method('isConnected')->willReturn(true);
         $this->source = $this->createStub(ProductImageSource::class);
         $this->source->method('find')->willReturn(self::PRODUCT);
         $this->source->method('read')->willReturn('bytes');
     }
 
     #[Test]
-    public function itRefusesBeforeConfirmationWhenNotConfigured(): void
+    public function itRefusesBeforeConfirmationWhenNotConnected(): void
     {
-        $client = $this->createStub(HiggsfieldClient::class);
-        $client->method('isConfigured')->willReturn(false);
+        $client = $this->createStub(HiggsfieldMedia::class);
+        $client->method('isConnected')->willReturn(false);
         $action = new GenerateImageAction($client, $this->source);
 
         self::assertSame(
-            ['error' => AbstractGenerateAction::NOT_CONFIGURED],
+            ['error' => AbstractGenerateAction::NOT_CONNECTED],
             $action->findRefusal(['sku' => 'MUG-1', 'prompt' => 'kitchen'])
         );
     }
@@ -73,49 +73,52 @@ class GenerateActionTest extends TestCase
     }
 
     #[Test]
-    public function itUploadsTheMainImageAndQueuesTheImage(): void
+    public function itUploadsTheMainImageAndQueuesNanoBananaPro(): void
     {
         $this->client = $this->configuredMock();
         $this->client->expects(self::once())
             ->method('uploadImage')
-            ->with('bytes', 'image/jpeg')
-            ->willReturn(['public_url' => 'https://cdn.example.com/in.jpeg']);
+            ->with('bytes', 'image/jpeg', 'mug.jpg')
+            ->willReturn(['media_id' => 'media-1']);
         $this->client->expects(self::once())
             ->method('submit')
-            ->with(GenerateImageAction::ENDPOINT, [
+            ->with('generate_image', [
+                'model' => 'nano_banana_2',
                 'prompt' => 'on a kitchen table',
-                'image_urls' => ['https://cdn.example.com/in.jpeg'],
                 'aspect_ratio' => '1:1',
                 'resolution' => '4k',
-                'quality' => 'high',
-                'enhance_prompt' => false,
+                'medias' => [['value' => 'media-1', 'role' => 'image_references']],
             ])
-            ->willReturn(['status' => 'queued', 'request_id' => 'req-1']);
+            ->willReturn(['job_id' => 'job-1', 'status' => 'queued']);
 
         $result = (new GenerateImageAction($this->client, $this->source))->execute(
-            ['sku' => 'MUG-1', 'prompt' => ' on a kitchen table ', 'aspect_ratio' => '5:4', 'resolution' => '4k'],
+            ['sku' => 'MUG-1', 'prompt' => ' on a kitchen table ', 'aspect_ratio' => '7:5', 'resolution' => '4k'],
             1
         );
 
-        self::assertSame('req-1', $result['request_id']);
+        self::assertSame('job-1', $result['request_id']);
         self::assertSame('image', $result['kind']);
         self::assertSame('MUG-1', $result['sku']);
     }
 
     #[Test]
-    public function itClampsTheVideoDurationAndTurnsSoundOffByDefault(): void
+    public function itStartsSeedanceFromTheMainImageWithClampedDuration(): void
     {
         $this->client = $this->configuredMock();
-        $this->client->method('uploadImage')->willReturn(['public_url' => 'https://cdn.example.com/in.jpeg']);
+        $this->client->method('uploadImage')->willReturn(['media_id' => 'media-2']);
         $this->client->expects(self::once())
             ->method('submit')
-            ->with(GenerateVideoAction::ENDPOINT, [
-                'image_url' => 'https://cdn.example.com/in.jpeg',
+            ->with('generate_video', [
+                'model' => 'seedance_2_0',
                 'prompt' => 'slow turn',
                 'duration' => 15,
-                'sound' => 'off',
+                'aspect_ratio' => '16:9',
+                'resolution' => '720p',
+                'mode' => 'std',
+                'generate_audio' => false,
+                'medias' => [['value' => 'media-2', 'role' => 'start_image']],
             ])
-            ->willReturn(['status' => 'queued', 'request_id' => 'req-2']);
+            ->willReturn(['job_id' => 'job-2', 'status' => 'queued']);
 
         $result = (new GenerateVideoAction($this->client, $this->source))->execute(
             ['sku' => 'MUG-1', 'prompt' => 'slow turn', 'duration' => 60],
@@ -123,26 +126,62 @@ class GenerateActionTest extends TestCase
         );
 
         self::assertSame('video', $result['kind']);
+        self::assertSame('seedance_2_0', $result['model']);
     }
 
     #[Test]
-    public function itShowsTheEstimatedCostInTheImpacts(): void
+    public function itMapsSoundToTheKlingParameter(): void
     {
-        $this->client->method('estimate')->willReturn(['credits' => '1.500', 'usd' => '0.094']);
+        $this->client = $this->configuredMock();
+        $this->client->method('uploadImage')->willReturn(['media_id' => 'media-3']);
+        $this->client->expects(self::once())
+            ->method('submit')
+            ->with('generate_video', [
+                'model' => 'kling3_0',
+                'prompt' => 'orbit',
+                'duration' => 3,
+                'aspect_ratio' => '9:16',
+                'mode' => 'std',
+                'sound' => 'on',
+                'medias' => [['value' => 'media-3', 'role' => 'start_image']],
+            ])
+            ->willReturn(['job_id' => 'job-3', 'status' => 'queued']);
 
-        $impacts = (new GenerateImageAction($this->client, $this->source))->getImpacts(
+        (new GenerateVideoAction($this->client, $this->source))->execute(
+            ['sku' => 'MUG-1', 'prompt' => 'orbit', 'model' => 'kling3_0', 'duration' => 3,
+                'aspect_ratio' => '9:16', 'sound' => true],
+            1
+        );
+    }
+
+    #[Test]
+    public function itRefusesAnAspectRatioKlingDoesNotSupport(): void
+    {
+        $refusal = (new GenerateVideoAction($this->client, $this->source))->findRefusal(
+            ['sku' => 'MUG-1', 'prompt' => 'orbit', 'model' => 'kling3_0', 'aspect_ratio' => '4:3']
+        );
+
+        self::assertSame(['error' => 'kling3_0 supports the aspect ratios 16:9, 9:16, 1:1'], $refusal);
+    }
+
+    #[Test]
+    public function itShowsThePreflightedCostInTheImpacts(): void
+    {
+        $this->client->method('cost')->willReturn(22.5);
+
+        $impacts = (new GenerateVideoAction($this->client, $this->source))->getImpacts(
             ['sku' => 'MUG-1', 'prompt' => 'kitchen'],
             1
         );
 
-        self::assertStringContainsString('MUG-1 (Mug)', $impacts[0]);
-        self::assertStringContainsString('1.500 credits (about $0.094)', $impacts[0]);
+        self::assertStringContainsString('MUG-1 (Mug) with seedance_2_0', $impacts[0]);
+        self::assertStringContainsString('22.5 credits', $impacts[0]);
     }
 
-    private function configuredMock(): HiggsfieldClient&MockObject
+    private function configuredMock(): HiggsfieldMedia&MockObject
     {
-        $client = $this->createMock(HiggsfieldClient::class);
-        $client->method('isConfigured')->willReturn(true);
+        $client = $this->createMock(HiggsfieldMedia::class);
+        $client->method('isConnected')->willReturn(true);
 
         return $client;
     }

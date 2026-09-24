@@ -359,16 +359,19 @@
             </argument>
         </arguments>
     </type>
-    <type name="MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldClient">
+    <type name="MagoAssistant\Mago\Service\Skills\Catalog\ProductMedia\HiggsfieldMedia">
         <arguments>
             <argument name="httpClient" xsi:type="object">GuzzleHttp\Client</argument>
         </arguments>
     </type>
-    <type name="Magento\Config\Model\Config\TypePool">
+    <type name="MagoAssistant\Mago\Service\Higgsfield\OAuthService">
         <arguments>
-            <argument name="sensitive" xsi:type="array">
-                <item name="mago/higgsfield/api_key_secret" xsi:type="string">1</item>
-            </argument>
+            <argument name="httpClient" xsi:type="object">GuzzleHttp\Client</argument>
+        </arguments>
+    </type>
+    <type name="MagoAssistant\Mago\Service\Higgsfield\McpClient">
+        <arguments>
+            <argument name="httpClient" xsi:type="object">GuzzleHttp\Client</argument>
         </arguments>
     </type>
 </config>

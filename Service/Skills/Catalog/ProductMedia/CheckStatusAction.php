@@ -14,10 +14,8 @@ use MagoAssistant\Mago\Service\Privacy\PiiClass;
  */
 class CheckStatusAction implements ActionInterface
 {
-    private const PENDING = ['queued', 'in_progress'];
-
     public function __construct(
-        private readonly HiggsfieldClient $client,
+        private readonly HiggsfieldMedia $client,
         private readonly MediaStorage $storage
     ) {
     }
@@ -85,63 +83,41 @@ class CheckStatusAction implements ActionInterface
         }
 
         $result = $this->client->status($requestId);
-        // A failed generation carries its reason in "error" too, so only a missing status means the call failed.
-        if (!isset($result['status'])) {
-            return ['error' => (string)($result['error'] ?? 'Higgsfield returned no status.')];
+        if (isset($result['error'])) {
+            return ['error' => (string)$result['error']];
         }
 
-        $status = (string)($result['status'] ?? '');
-        if (in_array($status, self::PENDING, true)) {
+        $status = (string)$result['status'];
+        if ($status !== 'completed' && !in_array($status, HiggsfieldMedia::TERMINAL_FAILURES, true)) {
             return ['request_id' => $requestId, 'status' => $status, 'message' => 'Not ready yet.'];
         }
 
         if ($status !== 'completed') {
             $reason = match ($status) {
                 'nsfw' => 'Higgsfield blocked the result for its content policy.',
+                'ip_detected' => 'Higgsfield held the result back because it may contain protected content.',
                 'canceled' => 'The request was canceled.',
-                default => 'Generation failed' . (is_string($result['error'] ?? null) ? ': ' . $result['error'] : '.'),
+                default => 'Generation failed.',
             };
 
             return [
                 'request_id' => $requestId,
                 'status' => $status,
-                'message' => $reason . ' No credits were charged.',
+                'message' => $reason . ' No file was produced.',
             ];
         }
 
-        [$urls, $extension] = $this->outputs($result);
+        $urls = (array)$result['urls'];
         if ($urls === []) {
             return ['error' => 'Higgsfield reports the request as completed but returned no files.'];
         }
 
-        $files = $this->storage->store($requestId, $urls, $extension);
+        $files = $this->storage->store($requestId, $urls, $result['type'] === 'video' ? 'mp4' : 'png');
         if ($files === null) {
             return ['error' => 'The generated files could not be downloaded from Higgsfield. Try again.'];
         }
 
         return $this->completed($requestId, $files);
-    }
-
-    /**
-     * Output URLs and the file extension to fall back on.
-     *
-     * @param array<string,mixed> $result
-     * @return array{0:list<string>,1:string}
-     */
-    private function outputs(array $result): array
-    {
-        if (is_array($result['video'] ?? null) && is_string($result['video']['url'] ?? null)) {
-            return [[$result['video']['url']], 'mp4'];
-        }
-
-        $urls = [];
-        foreach ((array)($result['images'] ?? []) as $image) {
-            if (is_array($image) && is_string($image['url'] ?? null)) {
-                $urls[] = $image['url'];
-            }
-        }
-
-        return [$urls, 'png'];
     }
 
     /**
