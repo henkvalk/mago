@@ -741,18 +741,40 @@ define([
         return href.replace(/"/g, '%22');
     }
 
-    // sessionStorage does not follow a noopener link into a new tab, so admin links carry the id.
-    function withResumeParam(href) {
+    function isAdminLink(href) {
         var adminBase = String(config.adminBaseUrl || '');
         var adminPath = adminBase.replace(/^https?:\/\/[^/]+/i, '');
-        if (!conversationId || href === '#') return href;
-        var isAdmin = (adminBase && href.indexOf(adminBase) === 0)
-            || (adminPath && href.indexOf(adminPath) === 0);
-        if (!isAdmin || href.indexOf(RESUME_PARAM + '=') !== -1) return href;
+        return (adminBase && href.indexOf(adminBase) === 0) || (adminPath && href.indexOf(adminPath) === 0);
+    }
+
+    // sessionStorage does not follow a noopener link into a new tab, so the id travels in the URL.
+    function withResumeParam(href) {
+        if (!conversationId || href.indexOf(RESUME_PARAM + '=') !== -1) return href;
         var hashIdx = href.indexOf('#');
         var hash = hashIdx === -1 ? '' : href.substring(hashIdx);
         var base = hashIdx === -1 ? href : href.substring(0, hashIdx);
         return base + (base.indexOf('?') === -1 ? '?' : '&') + RESUME_PARAM + '=' + conversationId + hash;
+    }
+
+    function showLinkChoice(link) {
+        var href = link.getAttribute('href');
+        var existing = msgs.querySelector('.mago-link-choice');
+        if (existing) existing.remove();
+        var card = UI.skillAsk({
+            icon: 'arrowUpRight',
+            title: t('Open link'),
+            text: link.textContent.trim() || href,
+            allowLabel: t('This tab'),
+            laterLabel: t('New tab'),
+            onAllow: function() { window.location.assign(href); },
+            onLater: function() {
+                card.remove();
+                window.open(withResumeParam(href), '_blank', 'noopener');
+            }
+        });
+        card.classList.add('mago-link-choice');
+        link.parentNode.insertAdjacentElement('afterend', card);
+        card.scrollIntoView({block: 'nearest'});
     }
 
     // Configure marked.js once if available
@@ -760,7 +782,7 @@ define([
         var markedRenderer = new marked.Renderer();
         markedRenderer.link = function(href, title, text) {
             if (typeof href === 'object' && href !== null) { text = href.text; title = href.title; href = href.href; }
-            href = withResumeParam(safeHref(href));
+            href = safeHref(href);
             var isAdmin = href.indexOf('/admin') !== -1 || href.charAt(0) === '/';
             var target = isAdmin ? '_self' : '_blank';
             var titleAttr = title ? ' title="' + String(title).replace(/"/g, '&quot;') + '"' : '';
@@ -800,7 +822,7 @@ define([
         h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
         h = h.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^ )]+|\/[^ )]+))\)/g, function(m, text, url) {
-            url = withResumeParam(safeHref(url));
+            url = safeHref(url);
             var isAdmin = url.indexOf('/admin') !== -1 || url.charAt(0) === '/';
             var target = isAdmin ? '_self' : '_blank';
             return '<a href="' + url + '" target="' + target + '" rel="noopener">' + text + '</a>';
@@ -810,7 +832,7 @@ define([
             if (before.indexOf('href=') !== -1 || before.indexOf('">') !== -1) return m;
             var isAdmin = url.indexOf('/admin') !== -1;
             var target = isAdmin ? '_self' : '_blank';
-            return '<a href="' + withResumeParam(safeHref(url)) + '" target="' + target + '" rel="noopener">' + url + '</a>';
+            return '<a href="' + safeHref(url) + '" target="' + target + '" rel="noopener">' + url + '</a>';
         });
         h = h.replace(/\n\n/g, '</p><p>');
         h = h.replace(/\n/g, '<br>');
@@ -893,6 +915,12 @@ define([
     msgs.addEventListener('click', function(e) {
         var scope = e.target.closest('.mago-message-content');
         if (!scope) return;
+        var link = e.target.closest('a[href]');
+        if (link && isAdminLink(link.getAttribute('href'))) {
+            e.preventDefault();
+            showLinkChoice(link);
+            return;
+        }
         var chip = e.target.closest('.mago-chip, .mago-suggestion:not([href])');
         if (chip) {
             e.preventDefault();

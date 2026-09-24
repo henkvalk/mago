@@ -143,6 +143,9 @@ class ChatPanel extends Template
             'You opened this page from a %1 chat. Continue that conversation here, or start a new one.',
             'Continue',
             'New chat',
+            'Open link',
+            'This tab',
+            'New tab',
         ];
 
         return array_combine($sentences, array_map(static fn (string $sentence): string => (string)__($sentence), $sentences));
