@@ -97,6 +97,11 @@ way, and is sent back to the provider again as conversation history on every lat
 field values you read or write through the assistant like any other conversation content — not as
 something more private just because it came from a form field.
 
+With privacy mode on, a `read_fields` value still crosses, but first passes the PII heuristic: an
+email address, IBAN, phone number, BSN or VAT number in it is replaced by a token before it reaches
+the provider. A name or street without such a signature is not recognised. Customer, address and
+order forms are on the deny list and never send field values at all.
+
 The one thing that does *not* follow this path is the extra context `write_fields` adds purely for
 the confirmation prompt — a field's current value and label, attached to `client_directive` by the
 server so the browser can show "Label: `old` → `new`". `client_directive` is stripped before a tool
