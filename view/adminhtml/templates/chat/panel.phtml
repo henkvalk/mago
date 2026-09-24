@@ -140,6 +140,9 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+            <!-- Filled by chat-panel.js after the screen is up: the feed is never fetched while a page renders -->
+            <div id="mago-addons" class="mago-addons-section" hidden></div>
+
             <div class="mago-welcome-hint">
                 <kbd>/</kbd> <?= $escaper->escapeHtml(__('for skills')) ?>
             </div>

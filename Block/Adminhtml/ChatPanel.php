@@ -59,6 +59,7 @@ class ChatPanel extends Template
         parent::__construct($context, $data);
     }
 
+
     public function isVisible(): bool
     {
         if (!$this->configRepository->isEnabled()) {
@@ -78,6 +79,7 @@ class ChatPanel extends Template
             'deleteUrl' => $this->getUrl('mago/chat/delete'),
             'confirmUrl' => $this->getUrl('mago/chat/confirm'),
             'rejectUrl' => $this->getUrl('mago/chat/reject'),
+            'addonsUrl' => $this->getUrl('mago/chat/addons'),
             'statusUrl' => $this->getUrl('mago/chat/status'),
             'apiBaseUrl' => $this->getUrl('rest/V1/assistant'),
             'isStreamingEnabled' => $this->configRepository->isStreamingEnabled(),
@@ -133,6 +135,8 @@ class ChatPanel extends Template
             'Action rejected. No changes were made.',
             'CMS page',
             'CMS block',
+            'New available add-ons',
+            'All add-ons',
         ];
 
         return array_combine($sentences, array_map(static fn (string $sentence): string => (string)__($sentence), $sentences));

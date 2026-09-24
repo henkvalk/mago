@@ -31,6 +31,7 @@ interface RepositoryInterface
     public const XML_PATH_INTERNAL_SSL_VERIFY = 'mago/api/internal_ssl_verify';
     public const XML_PATH_LANGUAGE = 'mago/chat/language';
     public const XML_PATH_ANSWER_WIDGETS = 'mago/chat/answer_widgets';
+    public const XML_PATH_ADDONS_ENABLED = 'mago/addons/enabled';
     public const XML_PATH_DOCS_ENABLED = 'mago/docs/enabled';
     public const XML_PATH_DOCS_SOURCE_REPO = 'mago/docs/source_repo';
     public const XML_PATH_DOCS_REF = 'mago/docs/ref';
@@ -149,6 +150,13 @@ interface RepositoryInterface
      * @return bool
      */
     public function isInternalSslVerifyEnabled(): bool;
+
+    /**
+     * Whether the dashboard may show the add-on feed
+     *
+     * @return bool
+     */
+    public function isAddonFeedEnabled(): bool;
 
     /**
      * @return bool

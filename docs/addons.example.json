@@ -1,0 +1,22 @@
+{
+  "addons": [
+    {
+      "name": "OpenKVK",
+      "package": "mago-assistant/magento2-openkvk",
+      "description": "Look up a Dutch company by KvK number or name, straight from the chat.",
+      "url": "https://askmago.com/add-ons/openkvk",
+      "icon": "🏢",
+      "version": "1.0.0",
+      "released_at": "2026-09-24"
+    },
+    {
+      "name": "VIES VAT check",
+      "package": "mago-assistant/magento2-vies",
+      "description": "Validate an EU VAT number against the European Commission register.",
+      "url": "https://askmago.com/add-ons/vies",
+      "icon": "🇪🇺",
+      "version": "1.0.0",
+      "released_at": "2026-09-22"
+    }
+  ]
+}
