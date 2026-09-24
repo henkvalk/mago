@@ -310,6 +310,12 @@ The module ships with 10 tools grouped into 4 skill areas:
 | `product_data` | `Service\Skills\Analytics\ProductData` | Yes | Product search, lookup by SKU, inventory counts, low-stock alerts. |
 | `customer_data` | `Service\Skills\Analytics\CustomerData` | Yes | Customer counts, recent signups, top spenders. **Never returns PII** — only aggregates and IDs. |
 
+### Inventory
+
+| Tool | Class | Read-only | Description |
+|------|-------|-----------|-------------|
+| `dead_stock` | `Service\Skills\Inventory\DeadStock` | Yes | Obsolete inventory (in stock, no net sales in N months) and slow-moving inventory (stock lasts at least N days at the current sales rate). Returns totals, the products with the highest stock value and an `export_url` to the admin route `mago/deadstock/export`, which downloads the full list as CSV. Requires `Magento_Reports::report_products`. |
+
 ### Store Configuration
 
 | Tool | Class | Read-only | Description |

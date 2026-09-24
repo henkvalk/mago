@@ -790,6 +790,8 @@ class ChatService implements ChatServiceInterface
             'product_data.search' => 'Searching products...',
             'product_data.low_stock' => 'Checking low stock...',
             'product_data.get_by_sku' => 'Fetching product...',
+            'dead_stock.obsolete' => 'Finding obsolete inventory...',
+            'dead_stock.slow_moving' => 'Finding slow-moving inventory...',
             'customer_data.lookup_customer' => 'Searching for customer...',
             'customer_data.recent_customers' => 'Fetching recent customers...',
             'cms_data.create_page' => 'Creating CMS page...',

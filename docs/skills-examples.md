@@ -79,6 +79,15 @@ Show products under 10 stock
 Find all disabled products
 ```
 
+### dead_stock (read-only)
+Obsolete and slow-moving inventory, with a link to download the full list as CSV. Only products created before the period count, because Magento keeps no receipt date.
+
+```
+Which products have not sold in the last 6 months? I want a CSV.
+Show slow-moving inventory over the last 12 months with more than a year of stock.
+What is the stock value of our obsolete inventory?
+```
+
 ### customer_data (read-only)
 Customer counts, recent signups, top spenders, and lookups.
 

@@ -24,6 +24,7 @@ Overview of all Magento admin areas, current skill coverage, and planned additio
 |-------|---------|
 | `sales_data` | revenue_summary, top_products, top_refunded, recent_orders, order_count, lookup_order, search_orders, customer_orders |
 | `product_data` | search, get_by_sku, count, low_stock |
+| `dead_stock` | obsolete, slow_moving, with CSV export |
 | `customer_data` | count, recent_signups, top_spenders, lookup_customer |
 | `config_reader` | Read config by path/scope |
 | `admin_navigator` | Search admin pages, direct links to entities |

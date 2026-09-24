@@ -74,6 +74,7 @@
                 <item name="docs_search" xsi:type="object">MagoAssistant\Mago\Service\Skills\Docs\DocsSearch</item>
                 <item name="module_version" xsi:type="object">MagoAssistant\Mago\Service\Skills\System\ModuleVersion</item>
                 <item name="page_form" xsi:type="object">MagoAssistant\Mago\Service\Skills\Form\PageForm</item>
+                <item name="dead_stock" xsi:type="object">MagoAssistant\Mago\Service\Skills\Inventory\DeadStock</item>
             </argument>
         </arguments>
     </type>
