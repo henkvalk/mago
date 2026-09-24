@@ -27,6 +27,7 @@ if ($luminance < 0.3) {
 }
 $assistantName = $block->getAssistantName();
 $adminName = $block->getAdminFirstName();
+$hasAccess = $block->canUseAssistant();
 // The welcome screen offers the first few skills as one-click starters.
 $skills = json_decode($block->getSkillsJson(), true) ?: [];
 $starterSkills = array_slice(array_values($skills), 0, 3);
@@ -64,6 +65,62 @@ $starterSkills = array_slice(array_values($skills), 0, 3);
     --mago-tracking: -0.01em;
 }
 </style>
+
+<?php if (!$hasAccess): ?>
+<style>
+.mago-launcher-locked{position:fixed;right:24px;bottom:24px;z-index:9998;width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;background:var(--mago-accent);color:var(--mago-accent-text);box-shadow:0 6px 20px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-family:var(--mago-font);}
+.mago-launcher-locked:hover{background:var(--mago-accent-hover);}
+.mago-locked{position:fixed;right:24px;bottom:88px;z-index:9998;width:320px;max-width:calc(100vw - 48px);background:var(--mago-panel);color:var(--mago-ink);border:1px solid var(--mago-hairline);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);font-family:var(--mago-font);overflow:hidden;}
+.mago-locked-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--mago-hairline);}
+.mago-locked-title{font-weight:600;font-size:14px;}
+.mago-locked-close{border:none;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--mago-ink-soft);padding:0 4px;}
+.mago-locked-body{padding:16px 16px 18px;}
+.mago-locked-body h2{margin:0 0 6px;font-size:15px;font-weight:600;color:var(--mago-ink);}
+.mago-locked-body p{margin:0;font-size:13px;line-height:1.5;color:var(--mago-ink-soft);}
+</style>
+<button type="button" id="mago-launcher-locked" class="mago-launcher-locked"
+        aria-label="<?= $escaper->escapeHtmlAttr(__('Open %1', $assistantName)) ?>"
+        aria-expanded="false" aria-controls="mago-locked">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="34 30 188 188" fill="currentColor" aria-hidden="true">
+        <polygon points="128,40 160,72 128,104 96,72" opacity="0.55"/>
+        <polygon points="44,208 96,104 128,136 160,104 212,208 152,208 128,160 104,208"/>
+    </svg>
+</button>
+<div id="mago-locked" class="mago-locked" role="dialog" aria-label="<?= $escaper->escapeHtmlAttr($assistantName) ?>" hidden>
+    <div class="mago-locked-head">
+        <span class="mago-locked-title"><?= $escaper->escapeHtml($assistantName) ?></span>
+        <button type="button" id="mago-locked-close" class="mago-locked-close" aria-label="<?= $escaper->escapeHtmlAttr(__('Close')) ?>">&times;</button>
+    </div>
+    <div class="mago-locked-body">
+        <h2><?= $escaper->escapeHtml(__('You do not have access yet')) ?></h2>
+        <p><?= $escaper->escapeHtml(__('Your account is not allowed to use the assistant. Ask your store administrator to grant you access, then reload this page.')) ?></p>
+    </div>
+</div>
+<script>
+(function () {
+    'use strict';
+    var launcher = document.getElementById('mago-launcher-locked');
+    var panel = document.getElementById('mago-locked');
+    var close = document.getElementById('mago-locked-close');
+    if (!launcher || !panel) {
+        return;
+    }
+    function setOpen(open) {
+        panel.hidden = !open;
+        launcher.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    launcher.addEventListener('click', function () {
+        setOpen(panel.hidden);
+    });
+    if (close) {
+        close.addEventListener('click', function () {
+            setOpen(false);
+        });
+    }
+})();
+</script>
+<?php return; ?>
+<?php endif; ?>
 
 <div id="mago-chat" class="mago-chat-panel is-empty">
     <div class="mago-header">

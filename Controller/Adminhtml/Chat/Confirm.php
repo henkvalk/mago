@@ -118,13 +118,15 @@ class Confirm extends Action implements HttpPostActionInterface
             $this->conversationRepository->resolveConfirmation($messageId, true, $adminUserId, $toolCalls);
 
             foreach ($results as $toolCallId => $result) {
+                // PHP casts a numeric-string array key ("0", from providers like Ollama) to an int,
+                // which addMessage()'s ?string $toolCallId rejects — after the write has already run.
                 $this->conversationRepository->addMessage(
                     $conversationId,
                     'tool',
                     (string)$this->json->serialize($result),
                     null,
                     false,
-                    $toolCallId
+                    (string)$toolCallId
                 );
             }
 

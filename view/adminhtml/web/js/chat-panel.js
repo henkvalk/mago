@@ -665,6 +665,15 @@ define([
         .then(function(r) { return r.json(); })
         .then(function(data) {
             loading.style.display = 'none';
+            // The saved conversation is gone or owned by another admin (e.g. after logging in as a
+            // different user in the same tab); drop the dead id and start fresh, or it fails here on
+            // every page load.
+            if (data && data.error) {
+                conversationId = null;
+                saveState();
+                showGreeting();
+                return;
+            }
             var loaded = data.messages || [];
             if (!loaded.length) {
                 showGreeting();

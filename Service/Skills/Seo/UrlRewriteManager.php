@@ -25,6 +25,41 @@ class UrlRewriteManager extends AbstractSkill
         return 'Magento_UrlRewrite::urlrewrite';
     }
 
+    public function isIrreversibleAction(array $input): bool
+    {
+        return $this->isExternalRedirect($input) || parent::isIrreversibleAction($input);
+    }
+
+    public function getImpacts(array $input, int $adminUserId): array
+    {
+        if (!$this->isExternalRedirect($input)) {
+            return parent::getImpacts($input, $adminUserId);
+        }
+
+        $requestPath = ltrim(trim((string)($input['request_path'] ?? '')), '/');
+        $target = trim((string)($input['target_path'] ?? ''));
+        $host = (string)(parse_url($target, PHP_URL_HOST) ?: $target);
+
+        return [
+            sprintf('Sends storefront visitors of "/%s" to the external site %s.', $requestPath, $host),
+            'They leave your store for that address whenever they open that URL, until the rewrite is removed.',
+        ];
+    }
+
+    /**
+     * A create whose target is an absolute off-site URL rather than an internal path.
+     */
+    private function isExternalRedirect(array $input): bool
+    {
+        if (($input['action'] ?? '') !== 'create') {
+            return false;
+        }
+
+        $target = trim((string)($input['target_path'] ?? ''));
+
+        return $target !== '' && (str_starts_with($target, '//') || parse_url($target, PHP_URL_HOST) !== null);
+    }
+
     protected function getBaseInstructions(): string
     {
         return 'URL rewrites control how URLs map to Magento entities. '

@@ -112,6 +112,14 @@ class CancelAction implements IrreversibleActionInterface
             return $result;
         }
 
+        // The REST endpoint answers with a boolean; false means Magento declined the cancellation.
+        if (($result['result'] ?? null) === false) {
+            return [
+                'error' => 'Order #' . $order['increment_id'] . ' could not be canceled. Magento declined it '
+                    . '— the order may already be invoiced, shipped, or completed.',
+            ];
+        }
+
         return [
             'success' => true,
             'message' => 'Order #' . $order['increment_id'] . ' has been canceled',
