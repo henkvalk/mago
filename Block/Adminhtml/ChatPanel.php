@@ -69,10 +69,6 @@ class ChatPanel extends Template
         return $this->adminSession->isLoggedIn();
     }
 
-    /**
-     * Admin root (scheme, host and area front name, no route or secret key); the panel uses it to
-     * tell admin links apart from storefront links when it tags them with the conversation id.
-     */
     private function getAdminBaseUrl(): string
     {
         return rtrim($this->_urlBuilder->getBaseUrl(), '/') . '/' . $this->_urlBuilder->getAreaFrontName() . '/';
@@ -143,6 +139,10 @@ class ChatPanel extends Template
             'Action rejected. No changes were made.',
             'CMS page',
             'CMS block',
+            'Continue conversation?',
+            'You opened this page from a %1 chat. Continue that conversation here, or start a new one.',
+            'Continue',
+            'New chat',
         ];
 
         return array_combine($sentences, array_map(static fn (string $sentence): string => (string)__($sentence), $sentences));

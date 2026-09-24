@@ -55,8 +55,6 @@ define([
     var SS_KEY_OPEN = 'mago_open';
     var SS_KEY_CONV = 'mago_conv';
     var SS_KEY_FULL = 'mago_fullsize';
-    // Query parameter a Mago-rendered admin link carries so the tab it opens in can offer to
-    // pick the conversation up again; sessionStorage does not follow a link into a new tab.
     var RESUME_PARAM = 'mago_conv';
     var DIRECTIVE_TYPE_FORM_WRITE = 'form_write';
     var DIRECTIVE_TYPE_FORM_NAVIGATE = 'form_navigate';
@@ -743,9 +741,7 @@ define([
         return href.replace(/"/g, '%22');
     }
 
-    // Admin links rendered by the assistant carry the live conversation id, so that when the link
-    // opens in another tab, the panel there can offer to continue this conversation. Storefront
-    // and external links have no panel and are left untouched.
+    // sessionStorage does not follow a noopener link into a new tab, so admin links carry the id.
     function withResumeParam(href) {
         var adminBase = String(config.adminBaseUrl || '');
         var adminPath = adminBase.replace(/^https?:\/\/[^/]+/i, '');
@@ -1485,9 +1481,6 @@ define([
         });
     }
 
-    // Arriving through a link the assistant rendered in another tab: open the panel and let the
-    // admin choose between picking that conversation up here or starting fresh. The parameter is
-    // dropped from the address so a reload or bookmark does not ask again.
     function offerResume(id) {
         try {
             var url = new URL(window.location.href);
@@ -1502,10 +1495,10 @@ define([
         var msgEl = addMsg('assistant', '');
         var card = UI.skillAsk({
             icon: 'arrowRight',
-            title: 'Continue conversation?',
-            text: 'You opened this page from a Mago chat. Continue that conversation here, or start a new one.',
-            allowLabel: 'Continue',
-            laterLabel: 'New chat',
+            title: t('Continue conversation?'),
+            text: t('You opened this page from a %1 chat. Continue that conversation here, or start a new one.', config.assistantName || 'Mago'),
+            allowLabel: t('Continue'),
+            laterLabel: t('New chat'),
             onAllow: function() { loadConversation(id); },
             onLater: function() {
                 clearMsgs();
