@@ -9,6 +9,7 @@ namespace MagoAssistant\Mago\Service\Skills\Form\PageForm;
 use MagoAssistant\Mago\Api\Skill\ActionInterface;
 use MagoAssistant\Mago\Model\Form\PageContext;
 use MagoAssistant\Mago\Service\Form\PageContextHolder;
+use MagoAssistant\Mago\Service\Privacy\PiiClass;
 
 /**
  * Every page_form action, read or write, reads the same request-scoped PageContext and shares the
@@ -79,6 +80,22 @@ abstract class AbstractPageFormAction implements ActionInterface
             'message' => 'This admin form cannot be read or written to by the assistant because it '
                 . 'may contain personal data (customer, order or admin user details). Ask about '
                 . 'customers through customer_data instead.',
+        ];
+    }
+
+    /**
+     * How noFormOpenResult() and deniedFormResult() cross to the LLM (#97). Every action returns
+     * them, so every action merges this into its own map; left out, the filter strips the result
+     * to {} and the model cannot say why nothing came back. The message is fixed text.
+     *
+     * @return array<string,array{0:string,1?:string}>
+     */
+    protected function noFormOpenFieldClassification(): array
+    {
+        return [
+            'form_open' => [PiiClass::PUBLIC],
+            'denied' => [PiiClass::PUBLIC],
+            'message' => [PiiClass::PUBLIC],
         ];
     }
 }

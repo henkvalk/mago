@@ -520,7 +520,7 @@ class WriteFieldsAction extends AbstractPageFormAction implements ValidatingActi
             'previous_value' => [PiiClass::STRIP],
             'entity_id' => [PiiClass::TOKENISE, 'entity'],
             'url' => [PiiClass::TOKENISE, 'url'],
-        ];
+        ] + $this->noFormOpenFieldClassification();
     }
 
 }

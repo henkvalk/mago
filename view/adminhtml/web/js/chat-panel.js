@@ -774,7 +774,14 @@ define([
         if (!t) return '';
         // Model output is attacker-influenceable (tool results can carry injected instructions), so
         // raw HTML must never reach innerHTML: escape first, then let marked render markdown only.
-        var safe = esc(t);
+        return renderEscapedMd(esc(t));
+    }
+
+    // Only for markdown the panel builds itself with every interpolated value already escaped
+    // (chat/confirm-text.js escapeForMarkdown/codeSpan); renderMd() would escape it a second time
+    // and show the administrator "&#60;" and "<code>" instead of the value.
+    function renderEscapedMd(safe) {
+        if (!safe) return '';
         if (window.marked) {
             return marked.parse(safe);
         }
@@ -1175,7 +1182,7 @@ define([
            both the description and the parameter table, which would otherwise show the raw
            directive JSON. Every other tool keeps the generic card. */
         var formWriteMessage = isFormWrite(first)
-            ? {html: renderMd(formatConfirmMessage(tools))}
+            ? {html: renderEscapedMd(formatConfirmMessage(tools))}
             : null;
         var hooks = {actions: 'mago-confirm-actions', allow: 'mago-btn--confirm', confirm: 'mago-btn--confirm', later: 'mago-btn--reject', cancel: 'mago-btn--reject'};
         var irreversible = tools.filter(function(t) { return t.irreversible; });

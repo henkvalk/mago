@@ -110,7 +110,7 @@ class ReadFieldsAction extends AbstractPageFormReadAction
             'label' => [PiiClass::PUBLIC],
             'message' => [PiiClass::PUBLIC],
             'value' => [PiiClass::STRIP],
-        ];
+        ] + $this->noFormOpenFieldClassification();
     }
 
 }

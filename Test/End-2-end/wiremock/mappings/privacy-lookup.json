@@ -9,7 +9,7 @@
         "bodyPatterns": [
           {"contains": "E2E privacy lookup check"},
           {"contains": "\"role\":\"tool\""},
-          {"contains": "[customer_"}
+          {"matches": "(?s).*mago:(\\\\?/){2}customer_[0-9].*"}
         ]
       },
       "response": {

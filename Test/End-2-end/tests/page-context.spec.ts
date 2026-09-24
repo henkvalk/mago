@@ -236,7 +236,9 @@ test.describe('Page context transport', () => {
 
       const logContents = await fs.readFile(DEBUG_LOG_PATH, 'utf8');
       const appended = logContents.slice(logSizeBefore);
-      const ownTurnLog = extractOwnTurnLog(appended, 'E2E Page Context Ack Check');
+      /* Privacy mode (#97) masks the request body as text before it is logged, so it lands as one
+         JSON-encoded string with its quotes escaped. */
+      const ownTurnLog = extractOwnTurnLog(appended, 'E2E Page Context Ack Check').replace(/\\"/g, '"');
 
       expect(ownTurnLog).toContain('"namespace":"product_form"');
       expect(ownTurnLog).toContain('"entityId":"' + productId + '"');

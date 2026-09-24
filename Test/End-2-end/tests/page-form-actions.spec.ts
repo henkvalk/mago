@@ -133,7 +133,10 @@ test.describe('page_form skill', () => {
 
     expect(toolResult.namespace).toBe('product_form');
     expect(toolResult.entity_type).toBe('product');
-    expect(toolResult.entity_id).toBe(String(productId));
+    /* This is the result the provider saw, and privacy mode (#97) hands it the entity id as a
+       vault token, never the id itself; write_fields turns the token back into the id. */
+    expect(toolResult.entity_id).toMatch(/^mago:\/\/entity_\d+$/);
+    expect(toolResult.entity_id).not.toContain(String(productId));
     expect(toolResult.store_id).toBe(String(nonDefaultStore.id));
   });
 

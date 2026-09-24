@@ -105,7 +105,7 @@ class DescribeFormAction extends AbstractPageFormReadAction
             'path' => [PiiClass::PUBLIC],
             'label' => [PiiClass::PUBLIC],
             'type' => [PiiClass::PUBLIC],
-        ];
+        ] + $this->noFormOpenFieldClassification();
     }
 
 }
