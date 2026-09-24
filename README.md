@@ -94,8 +94,15 @@ See [docs/skills-examples.md](docs/skills-examples.md) for more example prompts 
 Anthropic and OpenAI are included out of the box. For other providers (Azure, Gemini, DeepSeek,
 Ollama, LM Studio, etc.) install the matching Symfony AI bridge — see `composer.json` suggests.
 
+Neither `mago-assistant/mago` nor a 1.0 release of `mage-os/module-ai-base` is on Packagist yet,
+so until then install both from their Git repositories. The `--no-update` step is required:
+a single `composer require` resolves Mago's `^1.0` constraint before the inline alias applies.
+
 ```bash
-composer require mago-assistant/mago
+composer config repositories.mago vcs https://github.com/mago-assistant/mago
+composer config repositories.mage-os-ai-base vcs https://github.com/mage-os-lab/module-ai-base
+composer require --no-update mago-assistant/mago:dev-main "mage-os/module-ai-base:dev-main as 1.0.0"
+composer update mago-assistant/mago mage-os/module-ai-base --with-dependencies
 bin/magento module:enable MageOS_AiBase MagoAssistant_Mago
 bin/magento setup:upgrade
 ```
