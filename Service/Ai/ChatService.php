@@ -236,6 +236,9 @@ class ChatService implements ChatServiceInterface
                             'description' => $t->getDescription(),
                             'input' => $shownInput,
                         ] + $this->describeRisk($t, $shownInput, $adminUserId);
+                        if ($this->privacyService->containsPersonalToken($tc['input'] ?? [])) {
+                            $details['sensitive'] = true;
+                        }
                         $confirmTools[] = $details;
                         $describedCalls[] = $tc + $details;
                     }
@@ -551,11 +554,11 @@ class ChatService implements ChatServiceInterface
                 ]);
             }
             $input = $toolCall['input'] ?? [];
-            // A sensitive-class token (masked personal value, admin URL) never rehydrates into a
-            // write, resolvable or not: prompt injection could otherwise steer it into stored data
-            // an attacker can read back (the rehydration-oracle chain). Checked BEFORE rehydration.
+            // An admin URL token never rehydrates into a write, resolvable or not: it embeds the
+            // admin secret key. Masked personal values do rehydrate (#114); the confirmation card
+            // shows them in plain text with a warning instead. Checked BEFORE rehydration.
             if (!$tool->isReadOnlyAction($input) && $this->privacyService->containsSensitiveToken($input)) {
-                return ['error' => 'This action would write a masked personal value into data. Ask the '
+                return ['error' => 'This action would write an admin URL into data. Ask the '
                     . 'administrator to enter it directly on the form or in the request.'];
             }
             // The model only ever saw tokens for scrubbed values, so swap them back to real values on

@@ -101,26 +101,50 @@ class PrivacyService
     }
 
     /**
-     * Token types that never rehydrate into a write, resolvable or not: the heuristic-minted
-     * personal values, and admin URLs (they embed the admin secret key). A prompt injection could
-     * otherwise steer the model into writing "[email_1]" into e.g. CMS content, have the admin
-     * confirm an opaque-looking card, and read the rehydrated value back from the storefront.
+     * Token types that never rehydrate into a write, resolvable or not: an admin URL embeds the admin
+     * secret key, and nothing an administrator asks for needs it in stored data.
      */
-    private const WRITE_REFUSED_TYPES = '/(?:\[|mago:\/\/)(?:name|email|iban|vat|bsn|phone|url)_\d+\]?/';
+    private const WRITE_REFUSED_TYPES = '/(?:\[|mago:\/\/)url_\d+\]?/';
 
     /**
-     * True when any argument carries a token of a sensitive class (see WRITE_REFUSED_TYPES). Checked
-     * on the raw arguments BEFORE rehydration, so a resolvable sensitive token still refuses.
+     * Heuristic-minted personal values. They may be written (#114: a contact person in a CMS block is
+     * a legitimate write), but the confirmation card shows the real value with a warning, so the
+     * administrator decides with it in plain sight rather than approving an opaque token.
+     */
+    private const PERSONAL_TYPES = '/(?:\[|mago:\/\/)(?:name|email|iban|vat|bsn|phone)_\d+\]?/';
+
+    /**
+     * True when any argument carries a token of a write-refused class (see WRITE_REFUSED_TYPES).
+     * Checked on the raw arguments BEFORE rehydration, so a resolvable token still refuses.
      *
      * @param array<array-key,mixed> $input
      */
     public function containsSensitiveToken(array $input): bool
     {
+        return $this->matchesAnywhere($input, self::WRITE_REFUSED_TYPES);
+    }
+
+    /**
+     * True when any argument carries a masked personal value (see PERSONAL_TYPES). Checked on the
+     * raw, still tokenised arguments.
+     *
+     * @param array<array-key,mixed> $input
+     */
+    public function containsPersonalToken(array $input): bool
+    {
+        return $this->matchesAnywhere($input, self::PERSONAL_TYPES);
+    }
+
+    /**
+     * @param array<array-key,mixed> $input
+     */
+    private function matchesAnywhere(array $input, string $pattern): bool
+    {
         foreach ($input as $value) {
-            if (is_array($value) && $this->containsSensitiveToken($value)) {
+            if (is_array($value) && $this->matchesAnywhere($value, $pattern)) {
                 return true;
             }
-            if (is_string($value) && preg_match(self::WRITE_REFUSED_TYPES, $value) === 1) {
+            if (is_string($value) && preg_match($pattern, $value) === 1) {
                 return true;
             }
         }
@@ -196,7 +220,7 @@ class PrivacyService
         $newCarry = '';
         // Every branch has to consume at least one character, or the pattern matches the empty
         // string at the end of any delta and nothing is ever emitted.
-        if (preg_match('/(?:\[[a-z]*(?:_\d*)?|m(?:a(?:g(?:o(?::(?:\/(?:\/[a-z]*(?:_\d*)?)?)?)?)?)?))$/', $text, $m, PREG_OFFSET_CAPTURE) === 1) {
+        if (preg_match('/(?:\[[a-z]*(?:_\d*)?|m(?:a(?:g(?:o(?::(?:\/(?:\/[a-z]*(?:_\d*)?)?)?)?)?)?)?)$/', $text, $m, PREG_OFFSET_CAPTURE) === 1) {
             $offset = (int)$m[0][1];
             $newCarry = substr($text, $offset);
             $text = substr($text, 0, $offset);

@@ -27,7 +27,7 @@ consolidated spec lives on issue #97.
 | 2 | Fail-closed: a tool that declares nothing has every field stripped | Done in 2.0.0 (V1 shipped lenient for unclassified tools as an interim state) |
 | 3 | Silent input-scrub classes: email, BSN, IBAN, VAT, phone (NL-anchored); non-blocking client-side hint for FP-prone patterns | Done: `PiiHeuristic` with checksums (mod-97, elfproef), hint under the chat input |
 | 4 | Streaming rehydration handles tokens split across chunks; the admin's browser sees cleartext | Done, deviation: server-side carry buffer instead of the planned client-side vault; functionally equivalent and simpler, the browser still receives cleartext |
-| 5 | Unresolved token on display shows a neutral label; on a write it refuses | Done: "[earlier record]" on display; writes refuse unresolved tokens, and (post security review) sensitive-class tokens refuse on writes even when resolvable |
+| 5 | Unresolved token on display shows a neutral label; on a write it refuses | Done: "[earlier record]" on display; writes refuse unresolved tokens and admin URL tokens; personal-class tokens write after a warned confirmation (#114) |
 | 6 | Dev tripwire: log-only in developer mode, throw only under a test flag, skip in production | Done: `EgressTripwire` on every provider egress, `throwOnHit` via di.xml |
 | 7 | Integration and sink tests ride the existing e2e workflow; WireMock-journal assertion scoped per turn | Done: `privacy-mode.spec.ts` (journal + stored-copy asserts) plus a global canary mapping that fails any spec leaking the canary |
 | 8 | Classification becomes a required method on the @api interfaces; accepted major bump 1.1.0 to 2.0.0 | Done in 2.0.0: `getFieldClassification()` on `ActionInterface` and `ToolInterface`, all first-party tools classified, registry and opt-in interface removed |
@@ -50,11 +50,15 @@ consolidated spec lives on issue #97.
 - **Token grammar**: literal `[type_N]` instead of the planned salted sentinel. Compensating
   control: a defang pass neutralises token lookalikes in tool output before real tokens are
   minted, and forged or foreign tokens cannot resolve (vault is conversation-scoped).
-- **Sensitive-class write refusal** (added after the security gate): tokens of the heuristic
-  classes plus `url` never rehydrate into a write, resolvable or not. This closes the
-  rehydration-oracle chain (prompt injection steering vaulted PII into e.g. CMS content that
-  renders publicly). Id-class tokens do rehydrate into confirmed writes, and the confirmation
-  card shows the admin the rehydrated values they approve.
+- **Sensitive-class write refusal** (added after the security gate, narrowed in #114): `url`
+  tokens never rehydrate into a write, resolvable or not, because an admin URL embeds the admin
+  secret key. Heuristic-class tokens (name, email, IBAN, BSN, VAT, phone) originally refused too,
+  which blocked legitimate writes such as a contact person in a CMS block or a form value read by
+  `read_fields` and written back. They now rehydrate into confirmed writes; the confirmation card
+  shows the real value and a "may write personal data" warning. The rehydration-oracle chain
+  (prompt injection steering vaulted PII into public content) is mitigated by that card: every
+  write needs the admin's approval with the value in plain sight. Id-class tokens rehydrate as
+  before.
 - **Vault-conceal pass**: values the vault already tokenised (an order number echoed inside an
   ack message) are re-concealed in any kept string; the heuristic alone cannot catch them
   because bare ids have no signature. Values shorter than six characters are excluded

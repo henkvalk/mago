@@ -1223,6 +1223,10 @@ define([
             });
         }
         var actions = card.querySelector('.mago-confirm-actions');
+        // A write carrying a masked personal value (#114) is allowed, but only with that value in plain sight.
+        if (tools.some(function(t) { return t.sensitive; })) {
+            actions.parentNode.insertBefore(UI.callout({tone: 'warn', text: 'This may write personal data (such as an email address or phone number). Check the values before you allow it.'}), actions);
+        }
         msgEl.appendChild(card);
         msgs.scrollTop = msgs.scrollHeight;
 

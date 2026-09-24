@@ -176,6 +176,31 @@ final class ChatServiceTest extends TestCase
     }
 
     #[Test]
+    public function confirmationFlagsAWriteCarryingAMaskedPersonalValue(): void
+    {
+        $this->grants = ['cms_data' => 'write'];
+        $service = $this->buildChatService();
+        $this->responses = [[
+            'content' => '',
+            'tool_calls' => [
+                ['id' => 'call_1', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'Mail mago://email_1']],
+                ['id' => 'call_2', 'name' => 'cms_data', 'input' => ['action' => 'update_page', 'content' => 'About us']],
+            ],
+        ]];
+        $confirm = null;
+        $onChunk = static function (string $type, array $data) use (&$confirm): void {
+            if ($type === 'confirm') {
+                $confirm = $data;
+            }
+        };
+
+        $service->processMessageStreaming([$this->userMessage()], $onChunk, null, self::ADMIN_ID);
+
+        self::assertTrue($confirm['tools'][0]['sensitive']);
+        self::assertArrayNotHasKey('sensitive', $confirm['tools'][1]);
+    }
+
+    #[Test]
     public function aBrokenImpactLookupStillAsksWithAnEmptyImpactList(): void
     {
         $this->grants = ['order_manager' => 'write'];
@@ -589,7 +614,7 @@ final class ChatServiceTest extends TestCase
     }
 
     #[Test]
-    public function itRefusesAConfirmedWriteCarryingASensitiveTokenEvenWhenResolvable(): void
+    public function itRehydratesAConfirmedPersonalValueIntoTheWrite(): void
     {
         $this->grants['cms_data'] = 'write';
         $echo = new class implements \MagoAssistant\Mago\Api\Skill\ActionInterface {
@@ -648,11 +673,10 @@ final class ChatServiceTest extends TestCase
             'input' => ['action' => 'update_page', 'content' => 'Contact: mago://email_1'],
         ]], self::ADMIN_ID);
 
-        // Resolvable or not, a sensitive-class token never rehydrates into a write: this is the
-        // rehydration-oracle defense (prompt injection cannot exfiltrate vaulted PII via writes).
-        self::assertArrayHasKey('error', $results['call_1']);
-        self::assertStringContainsString('masked personal value', (string)$results['call_1']['error']);
-        self::assertNull($echo->received);
+        // #114: a personal value the admin approved on the card (shown there in plain text, with a
+        // warning) is written as itself, not refused and not as its token.
+        self::assertArrayNotHasKey('error', $results['call_1']);
+        self::assertSame('Contact: jan@example.com', $echo->received['content'] ?? null);
     }
 
     #[Test]
